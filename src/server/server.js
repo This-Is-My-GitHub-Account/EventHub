@@ -14,6 +14,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Routes
+
+//create a route for geteventbyuserid
 app.use('/api/auth', require('./routes/auth.routes'));
 app.use('/api/events', require('./routes/event.routes'));
 app.use('/api/registrations', require('./routes/registration.routes'));

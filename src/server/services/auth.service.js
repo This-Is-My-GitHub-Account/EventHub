@@ -1,6 +1,6 @@
 const supabase = require('../config/supabase.config');
 const jwt = require('jsonwebtoken');
-require('dotenv').config();
+require('dotenv').config({path: require('path').resolve(__dirname, '../../../.env') });
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
