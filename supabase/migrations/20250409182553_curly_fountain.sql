@@ -20,7 +20,6 @@ CREATE TABLE IF NOT EXISTS users (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   name VARCHAR(255) NOT NULL,
   email VARCHAR(255) UNIQUE NOT NULL,
-  password_hash VARCHAR(255) NOT NULL,
   gender VARCHAR(20),
   stream VARCHAR(100),
   date_of_birth DATE,
@@ -83,6 +82,13 @@ CREATE POLICY "Users can read their own data"
   FOR SELECT
   TO authenticated
   USING (auth.uid() = id);
+
+  -- Allow users to insert their own data
+CREATE POLICY "Users can insert their own data"
+  ON users
+  FOR INSERT
+  TO authenticated
+  WITH CHECK (auth.uid() = id);
 
 CREATE POLICY "Events are readable by all authenticated users"
   ON events
