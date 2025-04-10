@@ -1,28 +1,43 @@
 {
-  "name": "eventhub-backend",
-  "version": "1.0.0",
+  "name": "eventhub",
   "private": true,
+  "version": "0.0.0",
+  "type": "module",
   "scripts": {
-    "start": "node src/server.js",
-    "dev": "nodemon src/server.js",
-    "test": "jest"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
   },
   "dependencies": {
-    "@supabase/supabase-js": "latest",
-    "cors": "^2.8.5",
-    "dotenv": "^16.0.3",
-    "eventhub-backend": "file:",
-    "express": "^4.18.2",
-    "express-async-handler": "^1.2.0",
-    "express-rate-limit": "^6.7.0",
-    "helmet": "^7.0.0",
-    "joi": "^17.9.2",
-    "jsonwebtoken": "^9.0.0",
-    "nodemailer": "^6.9.1",
-    "winston": "^3.8.2"
+    "@radix-ui/react-avatar": "^1.0.4",
+    "@radix-ui/react-dialog": "^1.0.5",
+    "@radix-ui/react-dropdown-menu": "^2.0.6",
+    "@radix-ui/react-label": "^2.0.2",
+    "@radix-ui/react-progress": "^1.0.3",
+    "@radix-ui/react-select": "^2.0.0",
+    "@radix-ui/react-slot": "^1.0.2",
+    "@supabase/supabase-js": "^2.39.3",
+    "axios": "^1.6.7",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.1.0",
+    "date-fns": "^3.3.1",
+    "eventhub": "file:",
+    "lucide-react": "^0.323.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-hook-form": "^7.50.0",
+    "react-hot-toast": "^2.4.1",
+    "react-query": "^3.39.3",
+    "react-router-dom": "^6.22.0",
+    "tailwind-merge": "^2.2.1",
+    "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
-    "jest": "^29.5.0",
-    "nodemon": "^2.0.22"
+    "@types/node": "^20.11.16",
+    "@vitejs/plugin-react": "^4.2.1",
+    "autoprefixer": "^10.4.17",
+    "postcss": "^8.4.35",
+    "tailwindcss": "^3.4.1",
+    "vite": "^5.0.12"
   }
 }
