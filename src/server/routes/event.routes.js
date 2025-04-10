@@ -60,7 +60,7 @@ router.route('/:id')
  *
  * @apiSuccess {Object[]} events List of all user-created events.
  */
-router.route("/my")
+router.route("/myEvents")
   .get(getEventsForCurrentUser);
 /**
  * @api {put} /api/events/:id Update event
