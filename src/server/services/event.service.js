@@ -40,6 +40,15 @@ const getEventById = async (id) => {
   return data;
 };
 
+const getCurrentUserEvents = async (userId) => {
+  const {data, error} = await supabase
+    .from("events")
+    .select('*')
+    .eq('event_creator_id', userId)
+
+    if (error) throw error; 
+    return data;
+}
 const updateEvent = async (id, eventData, userId) => {
   const { data, error } = await supabase
     .from('events')
@@ -68,6 +77,7 @@ module.exports = {
   createEvent,
   getEvents,
   getEventById,
+  getCurrentUserEvents,
   updateEvent,
   deleteEvent
 };

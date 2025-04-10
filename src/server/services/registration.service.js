@@ -1,14 +1,17 @@
 const supabase = require('../config/supabase.config');
 const emailService = require('./email.service');
 
+//teams incomplete
 const registerForEvent = async (eventId, userId) => {
+  
   const { data: event } = await supabase
     .from('events')
     .select('*')
     .eq('id', eventId)
     .single();
-
+  
   if (!event) throw new Error('Event not found');
+
 
   const { data, error } = await supabase
     .from('registrations')
