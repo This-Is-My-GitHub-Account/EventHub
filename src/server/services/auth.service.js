@@ -1,5 +1,6 @@
 const supabase = require('../config/supabase.config');
 const jwt = require('jsonwebtoken');
+require('dotenv').config({path: require('path').resolve(__dirname, '../../../.env') });
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -8,19 +9,27 @@ const generateToken = (id) => {
 };
 
 const register = async (userData) => {
-  const { data: existingUser } = await supabase
-    .from('users')
-    .select('*')
-    .eq('email', userData.email)
-    .single();
+  
+  const { data: authData, error: authError } = await supabase.auth.signUp({
+    email: userData.email,
+    password: userData.password,
+  });
 
-  if (existingUser) {
-    throw new Error('User already exists');
-  }
+  if (authError) throw new Error(authError.message);
+  const userId = authData.user.id;
 
+ 
   const { data: user, error } = await supabase
     .from('users')
-    .insert([userData])
+    .insert([{
+      id: userId,
+      email: userData.email,
+      name: userData.name,
+      gender: userData.gender,
+      stream: userData.stream,
+      date_of_birth: userData.date_of_birth,
+      passing_out_year: userData.passing_out_year,
+    }])
     .select()
     .single();
 
@@ -28,25 +37,37 @@ const register = async (userData) => {
 
   return {
     ...user,
-    token: generateToken(user.id)
+    token: generateToken(user.id),
   };
 };
 
 const login = async (email, password) => {
-  const { data: user, error } = await supabase
-    .from('users')
-    .select('*')
-    .eq('email', email)
-    .eq('password_hash', password)
-    .single();
+  
+  const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
 
-  if (error || !user) {
+  if (authError || !authData.user) {
     throw new Error('Invalid credentials');
   }
 
+  const userId = authData.user.id;
+
+ 
+  const { data: userProfile, error } = await supabase
+    .from('users')
+    .select('*')
+    .eq('id', userId)
+    .single();
+
+  if (error || !userProfile) {
+    throw new Error('User profile not found');
+  }
+
   return {
-    ...user,
-    token: generateToken(user.id)
+    ...userProfile,
+    token: generateToken(userId),
   };
 };
 
