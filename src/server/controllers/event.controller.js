@@ -25,6 +25,7 @@ const getEventsForCurrentUser = asyncHandler(async (req, res) => {
   const events = await eventService.getCurrentUserEvents(req.user.id);
   res.json(events); 
 });
+
 const updateEvent = asyncHandler(async (req, res) => {
   const event = await eventService.updateEvent(req.params.id, req.body, req.user.id);
   res.json(event);

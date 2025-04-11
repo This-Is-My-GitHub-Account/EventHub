@@ -40,7 +40,15 @@ router.route('/')
  */
 router.route('/')
   .post(validate(eventSchema), createEvent);
-
+  /**
+   * @api {get} /api/events/my Get all events created by the current user
+   * @apiName GetEventsForCurrentUser
+   * @apiGroup Event
+   *
+   * @apiSuccess {Object[]} events List of all user-created events.
+   */
+router.route("/myEvents")
+  .get(getEventsForCurrentUser);
 /**
  * @api {get} /api/events/:id Get event by ID
  * @apiName GetEventById
@@ -53,15 +61,6 @@ router.route('/')
 router.route('/:id')
   .get(getEventById);
 
-/**
- * @api {get} /api/events/my Get all events created by the current user
- * @apiName GetEventsForCurrentUser
- * @apiGroup Event
- *
- * @apiSuccess {Object[]} events List of all user-created events.
- */
-router.route("/myEvents")
-  .get(getEventsForCurrentUser);
 /**
  * @api {put} /api/events/:id Update event
  * @apiName UpdateEvent

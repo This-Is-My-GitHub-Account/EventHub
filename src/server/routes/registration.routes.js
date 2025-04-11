@@ -21,7 +21,7 @@ router.use(protect);
  *
  * @apiError (Error 400) Error Registration failed.
  */
-router.post('/:id/register', registerForEvent);
+router.post('/register/:id', registerForEvent);
 
 /**
  * @api {get} /api/registrations/:id/registrations Get event registrations
@@ -34,6 +34,6 @@ router.post('/:id/register', registerForEvent);
  *
  * @apiError (Error 404) NotFound No registrations found for the event.
  */
-router.get('/:id/registrations', getEventRegistrations);
+router.get('/registrations/:id', getEventRegistrations);
 
 module.exports = router;

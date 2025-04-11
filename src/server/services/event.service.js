@@ -41,13 +41,14 @@ const getEventById = async (id) => {
 };
 
 const getCurrentUserEvents = async (userId) => {
+  
   const {data, error} = await supabase
     .from('events')
     .select('*')
     .eq('event_creator_id', userId);
 
-    if (error) throw error; 
-    return data;
+  if (error) throw error; 
+  return data;
 }
 const updateEvent = async (id, eventData, userId) => {
   const { data, error } = await supabase

@@ -4,12 +4,13 @@ const emailService = require('./email.service');
 //teams incomplete
 const registerForEvent = async (eventId, userId) => {
   
+
   const { data: event } = await supabase
     .from('events')
     .select('*')
-    .eq('id', eventId)
-    .single();
-  
+    .eq('id', eventId);
+ 
+    
   if (!event) throw new Error('Event not found');
 
 
@@ -18,7 +19,6 @@ const registerForEvent = async (eventId, userId) => {
     .insert([{
       event_id: eventId,
       user_id: userId,
-      status: 'pending'
     }])
     .select()
     .single();
