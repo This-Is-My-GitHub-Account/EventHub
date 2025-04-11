@@ -51,9 +51,9 @@ CREATE TABLE IF NOT EXISTS events (
 -- Create Registrations Table
 CREATE TABLE IF NOT EXISTS registrations (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-  event_id UUID REFERENCES events(id),
+  event_id UUID REFERENCES events(id) ON DELETE CASCADE,
   user_id UUID REFERENCES users(id),
-  team_id UUID,
+  team_id UUID REFERENCES teams(id),
   registration_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   status VARCHAR(20) DEFAULT 'pending',
   UNIQUE(event_id, user_id)
