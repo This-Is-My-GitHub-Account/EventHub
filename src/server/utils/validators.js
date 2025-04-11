@@ -29,7 +29,6 @@ const eventSchema = Joi.object({
 const teamSchema = Joi.object({
   event_id: Joi.string().uuid().required(),
   team_name: Joi.string().required(),
-  leader_id: Joi.string().uuid().required(),
   member_ids: Joi.array().items(Joi.string().uuid())
 });
 
