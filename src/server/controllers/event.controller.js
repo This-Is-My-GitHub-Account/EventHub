@@ -1,7 +1,15 @@
 const asyncHandler = require('express-async-handler');
 const eventService = require('../services/event.service');
+const uploadEventImage = require("../utils/uploadImage");
 
 const createEvent = asyncHandler(async (req, res) => {
+  
+  let imageUrl = null;
+  if (req.file) {
+    // Use your helper function to upload the image and get its public URL.
+    imageUrl = await uploadEventImage(req.file.buffer, req.file.originalname);
+  }
+  req.body.image_url = imageUrl;
   const event = await eventService.createEvent(req.body, req.user.id);
   res.status(201).json(event);
 });
