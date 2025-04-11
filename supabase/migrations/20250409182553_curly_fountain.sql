@@ -55,7 +55,6 @@ CREATE TABLE IF NOT EXISTS registrations (
   user_id UUID REFERENCES users(id),
   team_id UUID REFERENCES teams(id),
   registration_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  status VARCHAR(20) DEFAULT 'pending',
   UNIQUE(event_id, user_id)
 );
 
