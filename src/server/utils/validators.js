@@ -27,10 +27,12 @@ const eventSchema = Joi.object({
 });
 
 const teamSchema = Joi.object({
-  name: Joi.string().required(),
   event_id: Joi.string().uuid().required(),
-  member_id: Joi.string().uuid().required()
+  team_name: Joi.string().required(),
+  leader_id: Joi.string().uuid().required(),
+  member_ids: Joi.array().items(Joi.string().uuid())
 });
+
 
 module.exports = {
   userSchema,

@@ -4,6 +4,8 @@ const {
   registerForEvent,
   getUserRegistrations
 } = require('../controllers/registration.controller');
+const { validate } = require('../middleware/validation.middleware');
+const { teamSchema } = require('../utils/validators');
 
 const router = express.Router();
 
@@ -19,7 +21,7 @@ router.use(protect);
 * @apiSuccess {Object} team The created team object with member entries.*
 * @apiError (Error 400) ValidationError Missing or invalid data.
 */
-router.post('/', registerForEvent);
+router.post('/', validate(teamSchema), registerForEvent);
 
 /**
  * @api {get} /api/event-registration Get registrations for the current user
