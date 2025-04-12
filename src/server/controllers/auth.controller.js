@@ -13,7 +13,22 @@ const login = asyncHandler(async (req, res) => {
   res.json(user);
 });
 
+const getUserIdByEmail = asyncHandler(async (req, res) => {
+  const email = req.query.email;
+  if (!email) {
+    return res.status(400).json({ message: 'Email query parameter is required.' });
+  }
+  
+  const user = await userService.getUserIdByEmail(email);
+  if (!user) {
+    return res.status(404).json({ message: 'User not found.' });
+  }
+  
+  res.status(200).json(user);
+});
+
 module.exports = {
   register,
-  login
+  login,
+  getUserIdByEmail
 };

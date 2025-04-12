@@ -69,7 +69,22 @@ const login = async (email, password) => {
   };
 };
 
+const getUserIdByEmail = async (email) => {
+  const { data, error } = await supabase
+    .from('users')
+    .select('id, email')
+    .eq('email', email)
+    .single();
+
+  if (error) throw error;
+  return data;
+};
+
+
+
+
 module.exports = {
   register,
-  login
+  login,
+  getUserIdByEmail
 };

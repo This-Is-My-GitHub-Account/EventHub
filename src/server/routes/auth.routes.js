@@ -36,4 +36,18 @@ router.post('/register', validate(userSchema), register);
  */
 router.post('/login', login);
 
+
+/**
+ * @api {get} /api/users/by-email Fetch user by email address
+ * @apiName GetUserByEmail
+ * @apiGroup User
+ *
+ * @apiParam (Query) {String} email User email address.
+ *
+ * @apiSuccess {Object} user Contains the user ID and email.
+ *
+ * @apiError (Error 400) BadRequest Email query parameter is required.
+ * @apiError (Error 404) NotFound No user found with the given email.
+ */
+router.get('/by-email', getUserIdByEmail);
 module.exports = router;
