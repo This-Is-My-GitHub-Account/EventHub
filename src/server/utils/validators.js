@@ -11,6 +11,7 @@ const userSchema = Joi.object({
 });
 
 const eventSchema = Joi.object({
+  image_url: Joi.string(),
   event_name: Joi.string().required(),
   event_description: Joi.string().required(),
   important_dates: Joi.object(),

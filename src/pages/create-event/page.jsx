@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent } from "@/components/ui/card"
 import { CalendarIcon, Upload, MinusCircle, PlusCircle } from "lucide-react"
-
+import { eventsApi } from "../../services/api";
 export default function CreateEventPage() {
   const navigate = useNavigate()
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -137,32 +137,72 @@ export default function CreateEventPage() {
     }
   }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setIsSubmitting(true)
-    setError(null)
+// First, import your API service at the top of your page.jsx file
+ // Update the path if needed
 
-    try {
-      // Validate form data
-      if (formData.teamEvent && Number.parseInt(formData.minTeamSize) > Number.parseInt(formData.maxTeamSize)) {
-        throw new Error("Minimum team size cannot be greater than maximum team size")
-      }
+// Then modify your handleSubmit function in the CreateEventPage component
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setIsSubmitting(true);
+  setError(null);
 
-      if (!formData.isFree && !formData.registrationFee) {
-        throw new Error("Please enter a registration fee for paid events")
-      }
-
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500))
-
-      // Redirect to dashboard on success
-      navigate("/dashboard")
-    } catch (err) {
-      setError(err.message || "An error occurred while creating the event. Please try again.")
-    } finally {
-      setIsSubmitting(false)
+  try {
+    // Validate form data
+    if (formData.teamEvent && Number.parseInt(formData.minTeamSize) > Number.parseInt(formData.maxTeamSize)) {
+      throw new Error("Minimum team size cannot be greater than maximum team size");
     }
+
+    if (!formData.isFree && !formData.registrationFee) {
+      throw new Error("Please enter a registration fee for paid events");
+    }
+
+    // Create FormData object for file upload
+    const submitData = new FormData();
+    
+    // Map frontend form fields to backend schema fields
+    const eventData = {
+      event_name: formData.title,
+      event_description: formData.description,
+      important_dates: {
+        event_date: formData.eventDate,
+        start_time: formData.startTime,
+        end_time: formData.endTime,
+        timeline: formData.timeline
+      },
+      prizes: { 
+        prize_details: formData.prize 
+      },
+      event_type: "In Person", // Assuming in-person events for now
+      venue: formData.location,
+      contact_info: formData.contact,
+      participation_type: formData.teamEvent ? "Team" : "Solo",
+      max_team_size: formData.teamEvent ? Number(formData.maxTeamSize) : 1,
+      department: formData.department,
+      category: formData.isTechnical ? "Technical" : "Non-Technical",
+      registration_fee: formData.isFree ? 0 : Number(formData.registrationFee)
+    };
+
+    // Append event data as JSON string
+    submitData.append('eventData', JSON.stringify(eventData));
+    
+    // Append image file if exists
+    if (eventImage) {
+      submitData.append('eventImage', eventImage);
+    }
+
+    // Call the API to create the event
+    const response = await eventsApi.create(submitData);
+    console.log("Event created successfully:", response.data);
+
+    // Redirect to dashboard on success
+    navigate("/dashboard");
+  } catch (err) {
+    console.error("Error creating event:", err);
+    setError(err.response?.data?.message || err.message || "An error occurred while creating the event. Please try again.");
+  } finally {
+    setIsSubmitting(false);
   }
+};
 
   const isTabValid = (tab) => {
     switch (tab) {

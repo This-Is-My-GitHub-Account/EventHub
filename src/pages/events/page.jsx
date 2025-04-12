@@ -6,7 +6,7 @@ import Header from "../../components/layout/header"
 import Footer from "../../components/layout/footer"
 import EventCard from "../../components/ui-components/event-card"
 import EventFilters from "./filters"
-import { departments } from "../../dummy" // Import the departments data
+import { eventsApi } from "../../api" // Import the events API
 
 // Updated color theme constants 
 const colors = {
@@ -21,29 +21,57 @@ export default function EventsPage() {
   const [events, setEvents] = useState([])
   const [filteredEvents, setFilteredEvents] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [departments, setDepartments] = useState([])
+  const [eventTypes, setEventTypes] = useState([])
   
-  // Function to flatten all department events into a single array
-  const getAllEvents = () => {
-    const allEvents = []
-    departments.forEach(department => {
-      department.events.forEach(event => {
-        allEvents.push({
-          ...event,
-          department: department.name,
-          departmentId: department.name.toLowerCase().replace(/\s+/g, '-')
-        })
-      })
-    })
-    return allEvents
-  }
-
+  // Fetch events from the API
   useEffect(() => {
-    // Simulate loading data
-    setTimeout(() => {
-      const allEvents = getAllEvents()
-      setEvents(allEvents)
-      setLoading(false)
-    }, 500)
+    const fetchEvents = async () => {
+      try {
+        setLoading(true)
+        const response = await eventsApi.getAll()
+        const eventsData = response.data
+        
+        // Extract unique departments and event types
+        const uniqueDepartments = [...new Set(eventsData.map(event => event.department))]
+          .filter(Boolean)
+          .map(dept => ({
+            name: dept,
+            id: dept.toLowerCase().replace(/\s+/g, '-')
+          }))
+        
+        const uniqueEventTypes = [...new Set(eventsData.map(event => event.event_type))]
+          .filter(Boolean)
+        
+        setDepartments(uniqueDepartments)
+        setEventTypes(uniqueEventTypes)
+        
+        // Transform the event data to match your frontend structure
+        const transformedEvents = eventsData.map(event => ({
+          id: event.id,
+          title: event.event_name,
+          description: event.event_description,
+          date: event.registration_deadline,
+          department: event.department,
+          departmentId: event.department?.toLowerCase().replace(/\s+/g, '-'),
+          location: event.venue || "Online",
+          type: event.event_type,
+          status: new Date(event.registration_deadline) > new Date() ? "upcoming" : "past",
+          registrations: 0, // You'd need an additional API call to get registration count
+          image: event.image_url || "/images/default-event.jpg"
+        }))
+        
+        setEvents(transformedEvents)
+      } catch (err) {
+        console.error("Failed to fetch events:", err)
+        setError("Failed to load events. Please try again later.")
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    fetchEvents()
   }, [])
 
   useEffect(() => {
@@ -66,8 +94,8 @@ export default function EventsPage() {
       filtered = filtered.filter(
         (event) =>
           event.title.toLowerCase().includes(searchLower) ||
-          event.department.toLowerCase().includes(searchLower) ||
-          event.location.toLowerCase().includes(searchLower)
+          (event.department && event.department.toLowerCase().includes(searchLower)) ||
+          (event.location && event.location.toLowerCase().includes(searchLower))
       )
     }
 
@@ -84,7 +112,7 @@ export default function EventsPage() {
     // Event type filter
     if (filters.type && filters.type !== "all") {
       filtered = filtered.filter((event) => 
-        event.type.toLowerCase() === filters.type.toLowerCase()
+        event.type && event.type.toLowerCase() === filters.type.toLowerCase()
       )
     }
 
@@ -107,17 +135,6 @@ export default function EventsPage() {
     setFilteredEvents(filtered)
   }
 
-  // Function to get unique event types from all departments
-  const getEventTypes = () => {
-    const typesSet = new Set()
-    departments.forEach(department => {
-      department.events.forEach(event => {
-        typesSet.add(event.type)
-      })
-    })
-    return Array.from(typesSet)
-  }
-
   return (
     <div className="min-h-screen flex flex-col bg-white">
       <Header />
@@ -131,12 +148,22 @@ export default function EventsPage() {
           <EventFilters 
             onFilterChange={applyFilters} 
             departments={departments}
-            eventTypes={getEventTypes()}
+            eventTypes={eventTypes}
           />
 
           {loading ? (
             <div className="h-96 flex items-center justify-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2c7873]"></div>
+            </div>
+          ) : error ? (
+            <div className="min-h-[300px] flex flex-col items-center justify-center border rounded-md p-8 text-center bg-white shadow-sm border-red-200">
+              <h3 className="text-xl font-semibold mb-2 text-red-600">{error}</h3>
+              <button 
+                className="px-4 py-2 bg-[#2c7873] text-white rounded-md hover:bg-opacity-90 transition-colors mt-4"
+                onClick={() => window.location.reload()}
+              >
+                Try Again
+              </button>
             </div>
           ) : filteredEvents.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

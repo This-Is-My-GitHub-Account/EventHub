@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { authApi } from "@/api" // Import the authApi from your api.js file
 
 export default function SignUpPage() {
   const navigate = useNavigate()
@@ -73,11 +74,34 @@ export default function SignUpPage() {
       return
     }
 
+    // Create data object to match backend schema
+    const userData = {
+      name: formData.name,
+      email: formData.email,
+      password: formData.password,
+      gender: formData.gender || undefined,
+      stream: formData.stream || undefined,
+      date_of_birth: formData.date_of_birth || undefined,
+      passing_out_year: formData.passing_out_year ? parseInt(formData.passing_out_year) : undefined
+    }
+
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500))
+      const response = await authApi.register(userData)
+      
+      // Store the token and user data
+      const { token, ...user } = response.data
+      localStorage.setItem('userToken', token)
+      localStorage.setItem('userData', JSON.stringify(user))
+      
+      // Redirect to dashboard
       navigate("/dashboard")
-    } catch {
-      setError("An error occurred. Please try again.")
+    } catch (err) {
+      // Extract error message from response if available
+      const errorMessage = err.response?.data?.message || 
+                          err.response?.data?.error ||
+                          err.message ||
+                          "An error occurred during registration. Please try again."
+      setError(errorMessage)
     } finally {
       setIsLoading(false)
     }

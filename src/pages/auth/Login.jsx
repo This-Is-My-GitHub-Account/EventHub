@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { authApi } from "../../lib/api";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -78,18 +79,26 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      // Call the login API with the form data
+      const response = await authApi.login({
+        email: formData.email,
+        password: formData.password
+      });
 
-      if (
-        formData.email === "demo@example.com" &&
-        formData.password === "password"
-      ) {
-        navigate(redirectTo);
-      } else {
-        setError("Invalid email or password. Try demo@example.com / password");
-      }
-    } catch {
-      setError("An error occurred. Please try again.");
+      // Store user token in localStorage or sessionStorage based on rememberMe
+      const storage = formData.rememberMe ? localStorage : sessionStorage;
+      storage.setItem('userToken', response.data.token);
+      storage.setItem('userData', JSON.stringify(response.data));
+
+      // Navigate to the redirect page
+      navigate(redirectTo);
+    } catch (err) {
+      console.error("Login error:", err);
+      setError(
+        err.response?.data?.message || 
+        err.message || 
+        "Invalid email or password. Please try again."
+      );
     } finally {
       setIsLoading(false);
     }
@@ -201,7 +210,7 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Slideshow */}
+      {/* Slideshow - No changes needed here */}
       <div className="hidden md:block flex-1 relative overflow-hidden bg-[#d5efe6]">
         <div className="h-full relative">
           {slides.map((slide, index) => (

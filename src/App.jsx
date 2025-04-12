@@ -1,6 +1,8 @@
 import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
+// Import the AuthProvider from your authContext file
+import { AuthProvider } from "./contexts/authContext"; // Adjust import based on your folder structure
 
 // Pages
 import HomePage from "./pages/home/page";
@@ -14,14 +16,14 @@ import RegisterForm from "./pages/event-details/register-form";
 
 // Auth Guard Component
 const AuthGuard = ({ children }) => {
-  const isAuthenticated = true; // replace with real auth logic
-
+  // Here replace with your actual authentication logic using useAuth if necessary
+  const isAuthenticated = true;
   return isAuthenticated ? children : <Navigate to="/login" />;
 };
 
 function App() {
   return (
-    
+    <AuthProvider>
       <BrowserRouter>
         <Routes>
           {/* Public Routes */}
@@ -62,7 +64,7 @@ function App() {
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </BrowserRouter>
-    
+    </AuthProvider>
   );
 }
 
