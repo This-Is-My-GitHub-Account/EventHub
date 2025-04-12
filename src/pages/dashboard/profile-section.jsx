@@ -51,12 +51,17 @@ export default function ProfileSection() {
     })
   }
 
-  const handleUpdateProfile = () => {
-    setUser({
-      ...user,
-      ...formData,
-    })
-  }
+
+  const handleUpdateProfile = async () => {
+    try {
+      const response = await authApi.updateProfile(formData);
+      if (response && response.data) {
+        setUser(response.data);
+      }
+    } catch (error) {
+      console.error('Failed to update profile', error);
+    }
+  };
 
   // Calculate profile completion percentage
   const calculateProfileCompletion = () => {

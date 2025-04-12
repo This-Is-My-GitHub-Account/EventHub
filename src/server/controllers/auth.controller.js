@@ -27,8 +27,13 @@ const getUserIdByEmail = asyncHandler(async (req, res) => {
   res.status(200).json(user);
 });
 
+const updateProfile = asyncHandler(async (req, res) => {
+  const updatedUser = await profileService.updateProfile(req.user.id, req.body);
+  res.status(200).json(updatedUser);
+});
 module.exports = {
   register,
   login,
-  getUserIdByEmail
+  getUserIdByEmail,
+  updateProfile
 };

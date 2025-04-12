@@ -50,4 +50,27 @@ router.post('/login', login);
  * @apiError (Error 404) NotFound No user found with the given email.
  */
 router.get('/by-email', getUserIdByEmail);
+
+/**
+ * @api {put} /api/profile Update user profile
+ * @apiName UpdateUserProfile
+ * @apiGroup Profile
+ *
+ * @apiParam (Request body) {String} name Full name of the user.
+ * @apiParam (Request body) {String} email Email address of the user.
+ * @apiParam (Request body) {String} [phoneNumber] Phone number of the user.
+ * @apiParam (Request body) {Date} [date_of_birth] User's date of birth.
+ * @apiParam (Request body) {String} [gender] User's gender.
+ * @apiParam (Request body) {String} [stream] Department or stream of the user.
+ * @apiParam (Request body) {String} [passing_out_year] User's passing out year.
+ * @apiParam (Request body) {String} [address] Address of the user.
+ * @apiParam (Request body) {String} [bio] Bio of the user.
+ *
+ * @apiSuccess {Object} user The updated user object.
+ *
+ * @apiError (Error 400) ValidationError Some required fields are missing or invalid.
+ * @apiError (Error 401) Unauthorized User is not authenticated.
+ * @apiError (Error 404) NotFound The user was not found.
+ */
+router.put('/', updateProfile);
 module.exports = router;

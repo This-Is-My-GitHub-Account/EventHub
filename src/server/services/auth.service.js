@@ -81,10 +81,22 @@ const getUserIdByEmail = async (email) => {
 };
 
 
+const updateProfile = async (userId, updateData) => {
+  const { data, error } = await supabase
+    .from('users')
+    .update(updateData)
+    .eq('id', userId)
+    .select()
+    .single();
+    
+  if (error) throw error;
+  return data;
+};
 
 
 module.exports = {
   register,
   login,
-  getUserIdByEmail
+  getUserIdByEmail,
+  updateProfile
 };

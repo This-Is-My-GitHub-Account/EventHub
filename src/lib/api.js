@@ -81,8 +81,10 @@ export const registrationApi = {
 
 // Auth API
 export const authApi = {
-  register: (data) => api.post('/auth/register', data),
-  login: (data) => api.post('/auth/login', data),
-  logout: () => api.post('/auth/logout'),
-  getCurrentUserByMail: () => api.get('/auth/by-email'),
-};
+    register: (data) => api.post('/auth/register', data),
+    login: (data) => api.post('/auth/login', data),
+    logout: () => api.post('/auth/logout'),
+    getCurrentUserByMail: () => api.get('/auth/by-email'),
+    updateProfile: (data) => api.put('/profile', data),  // <-- Added updateProfile route
+  };
+  
