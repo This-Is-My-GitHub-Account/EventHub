@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { registrationApi, authApi } from "../../api" // Adjust path as needed
+import { toast } from "@/components/ui/use-toast" // Assuming you have a toast component
 
 export default function RegisterForm({ event, onSuccess }) {
   const [formData, setFormData] = useState({
@@ -22,6 +24,7 @@ export default function RegisterForm({ event, onSuccess }) {
   const [searchResults, setSearchResults] = useState([])
   const [isSearching, setIsSearching] = useState(false)
   const [isRegistering, setIsRegistering] = useState(false)
+  const [errors, setErrors] = useState({})
 
   const mockUsers = [
     { id: 1, name: "Jane Smith", email: "jane.smith@college.edu" },
@@ -88,15 +91,94 @@ export default function RegisterForm({ event, onSuccess }) {
     })
   }
 
-  const handleSubmit = (e) => {
+  // Function to get user IDs from emails
+  const getUserIdsByEmails = async (emails) => {
+    try {
+      // Collect all member IDs
+      const memberIds = []
+      
+      for (const email of emails) {
+        // Call the getCurrentUserByMail API with the email
+        const response = await authApi.getCurrentUserByMail(email)
+        
+        if (response.data && response.data.id) {
+          memberIds.push(response.data.id)
+        } else {
+          throw new Error(`User with email ${email} not found`)
+        }
+      }
+      
+      return memberIds
+    } catch (error) {
+      console.error("Error fetching user IDs:", error)
+      throw error
+    }
+  }
+
+  const handleSubmit = async (e) => {
     e.preventDefault()
     setIsRegistering(true)
-
-    setTimeout(() => {
-      console.log("Form submitted:", formData)
+    setErrors({})
+    
+    try {
+      // Prepare the emails array from team members
+      const memberEmails = event?.teamEvent 
+        ? formData.teamMembers.map(member => member.email)
+        : []
+      
+      // Include the participant's email
+      if (!memberEmails.includes(formData.participantEmail)) {
+        memberEmails.push(formData.participantEmail)
+      }
+      
+      // Get user IDs from emails
+      const memberIds = await getUserIdsByEmails(memberEmails)
+      
+      // Prepare data according to the schema
+      const registrationData = {
+        event_id: event.id,
+        team_name: formData.teamName,
+        member_ids: memberIds,
+        payment_method: formData.paymentMethod,
+        participant_phone: formData.participantPhone
+      }
+      
+      // Submit the registration
+      const response = await registrationApi.register(registrationData)
+      
+      console.log("Registration successful:", response.data)
+      
+      // Call the onSuccess callback provided by the parent component
+      if (onSuccess) {
+        onSuccess(response.data)
+      }
+      
+      // Show success toast
+      toast({
+        title: "Registration Complete",
+        description: "You have successfully registered for this event.",
+        variant: "success",
+      })
+      
+    } catch (error) {
+      console.error("Registration error:", error)
+      
+      // Set appropriate error message
+      if (error.response && error.response.data) {
+        setErrors(error.response.data.errors || { general: error.response.data.message })
+      } else {
+        setErrors({ general: "An error occurred during registration. Please try again." })
+      }
+      
+      // Show error toast
+      toast({
+        title: "Registration Failed",
+        description: error.response?.data?.message || "Failed to complete registration. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
       setIsRegistering(false)
-      onSuccess()
-    }, 1500)
+    }
   }
 
   const isTeamValid = () => {
@@ -112,6 +194,12 @@ export default function RegisterForm({ event, onSuccess }) {
       onSubmit={handleSubmit}
       className="bg-gradient-to-b from-blue-50 via-white to-blue-100 p-6 rounded-xl shadow-md space-y-6"
     >
+      {errors.general && (
+        <div className="p-3 bg-red-100 border border-red-300 text-red-600 rounded-md">
+          {errors.general}
+        </div>
+      )}
+      
       <div className="space-y-4">
         {/* Personal Info */}
         <div className="space-y-2">
@@ -127,6 +215,9 @@ export default function RegisterForm({ event, onSuccess }) {
               required
               className="bg-[#e0f2fe] text-[#003366]"
             />
+            {errors.participantName && (
+              <p className="text-sm text-red-500">{errors.participantName}</p>
+            )}
           </div>
 
           <div className="grid gap-2">
@@ -140,6 +231,9 @@ export default function RegisterForm({ event, onSuccess }) {
               required
               className="bg-[#e0f2fe] text-[#003366]"
             />
+            {errors.participantEmail && (
+              <p className="text-sm text-red-500">{errors.participantEmail}</p>
+            )}
           </div>
 
           <div className="grid gap-2">
@@ -153,6 +247,9 @@ export default function RegisterForm({ event, onSuccess }) {
               required
               className="bg-[#e0f2fe] text-[#003366]"
             />
+            {errors.participantPhone && (
+              <p className="text-sm text-red-500">{errors.participantPhone}</p>
+            )}
           </div>
         </div>
 
@@ -176,6 +273,9 @@ export default function RegisterForm({ event, onSuccess }) {
                   required
                   className="bg-[#e0f2fe] text-[#003366]"
                 />
+                {errors.team_name && (
+                  <p className="text-sm text-red-500">{errors.team_name}</p>
+                )}
               </div>
 
               <div className="mt-4">
@@ -210,6 +310,9 @@ export default function RegisterForm({ event, onSuccess }) {
                     </div>
                   ))}
                 </div>
+                {errors.member_ids && (
+                  <p className="text-sm text-red-500 mt-2">{errors.member_ids}</p>
+                )}
 
                 <div className="mt-4">
                   <div className="relative">
@@ -282,6 +385,9 @@ export default function RegisterForm({ event, onSuccess }) {
                   <Label htmlFor="offline">Pay at Registration Desk</Label>
                 </div>
               </RadioGroup>
+              {errors.payment_method && (
+                <p className="text-sm text-red-500">{errors.payment_method}</p>
+              )}
             </div>
           </>
         )}
