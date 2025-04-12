@@ -4,7 +4,7 @@ const emailService = require('./email.service');
 
 
 const registerTeamForEvent = async ({ event_id, team_name, leader_id, member_ids }) => {
-  // Insert into teams
+  // Insert into teams table
   const { data: team, error: teamError } = await supabase
     .from('teams')
     .insert([{ event_id, name: team_name, leader_id }])
@@ -12,7 +12,9 @@ const registerTeamForEvent = async ({ event_id, team_name, leader_id, member_ids
     .single();
 
   if (teamError) throw teamError;
-  member_ids.push(leader_id);
+  if (!member_ids.includes(leader_id)) {
+    member_ids.push(leader_id);
+  }
   const team_id = team.id;
 
   // Insert all members (including leader) into team_members
@@ -23,6 +25,18 @@ const registerTeamForEvent = async ({ event_id, team_name, leader_id, member_ids
     .insert(memberRecords);
 
   if (memberError) throw memberError;
+
+  // Retrieve event details from the events table so we can include them in the confirmation email
+  const { data: eventData, error: eventError } = await supabase
+    .from('events')
+    .select('*')
+    .eq('id', event_id)
+    .single();
+
+  if (eventError) throw eventError;
+
+  // Send registration confirmation email to the team leader
+  await emailService.sendRegistrationConfirmation(eventData, leader_id);
 
   return team;
 };
