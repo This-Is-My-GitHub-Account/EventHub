@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { authApi } from "@/api" // Import the authApi from your api.js file
+import { authApi } from "../../lib/api" // Import the authApi from your api.js file
 
 export default function SignUpPage() {
   const navigate = useNavigate()

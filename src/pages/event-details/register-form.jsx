@@ -7,8 +7,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { registrationApi, authApi } from "../../api" // Adjust path as needed
-import { toast } from "@/components/ui/use-toast" // Assuming you have a toast component
+import { registrationApi, authApi } from "../../lib/api"// Adjust path as needed
+import { Toaster } from "@/components/ui/sonner" // Assuming you have a toast component
 
 export default function RegisterForm({ event, onSuccess }) {
   const [formData, setFormData] = useState({
@@ -154,7 +154,7 @@ export default function RegisterForm({ event, onSuccess }) {
       }
       
       // Show success toast
-      toast({
+      Toaster({
         title: "Registration Complete",
         description: "You have successfully registered for this event.",
         variant: "success",
@@ -171,7 +171,7 @@ export default function RegisterForm({ event, onSuccess }) {
       }
       
       // Show error toast
-      toast({
+      Toaster({
         title: "Registration Failed",
         description: error.response?.data?.message || "Failed to complete registration. Please try again.",
         variant: "destructive",

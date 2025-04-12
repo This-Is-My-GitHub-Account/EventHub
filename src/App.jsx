@@ -2,7 +2,7 @@ import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 // Import the AuthProvider from your authContext file
-import { AuthProvider } from "./contexts/authContext"; // Adjust import based on your folder structure
+import AuthProvider from "../src/context/AuthContext"
 
 // Pages
 import HomePage from "./pages/home/page";

@@ -6,7 +6,7 @@ import Header from "../../components/layout/header"
 import Footer from "../../components/layout/footer"
 import EventCard from "../../components/ui-components/event-card"
 import EventFilters from "./filters"
-import { eventsApi } from "../../api" // Import the events API
+import { eventsApi } from "../../lib/api" // Import the events API
 
 // Updated color theme constants 
 const colors = {

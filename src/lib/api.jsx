@@ -1,8 +1,8 @@
 import axios from 'axios';
-import { supabase } from './supabase';
+import supabase from './supabase';
 
 const api = axios.create({
-  baseURL: 'localhost:3000/api',
+  baseURL: 'http://localhost:3000/api',
   headers: {
     'Content-Type': 'application/json',
   },

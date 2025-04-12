@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Link, useNavigate } from "react-router-dom"
-import { eventsApi, registrationApi } from "@/api" // Import the API functions
+import { eventsApi, registrationApi } from "../../lib/api" // Import the API functions
 
 export default function MyEvents() {
   const [activeTab, setActiveTab] = useState("registered")

@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent } from "@/components/ui/card"
 import { CalendarIcon, Upload, MinusCircle, PlusCircle } from "lucide-react"
-import { eventsApi } from "../../services/api";
+import { eventsApi } from "../../lib/api";
 export default function CreateEventPage() {
   const navigate = useNavigate()
   const [isSubmitting, setIsSubmitting] = useState(false)
