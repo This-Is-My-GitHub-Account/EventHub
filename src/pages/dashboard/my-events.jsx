@@ -69,6 +69,17 @@ export default function MyEvents() {
     navigate(`/event-details/${event.id}`)
   }
 
+  // Function to handle deletion of a created event
+  const handleDeleteEvent = async (id) => {
+    try {
+      await eventsApi.delete(id)
+      // Filter out deleted event from state
+      setCreatedEvents((prevEvents) => prevEvents.filter((event) => event.id !== id))
+    } catch (error) {
+      console.error("Error deleting event:", error)
+    }
+  }
+
   const renderRegisteredEvents = () => {
     if (isLoading) {
       return <div className="text-center py-8">Loading your registered events...</div>
@@ -207,21 +218,6 @@ export default function MyEvents() {
                   <span>{event.time || "All day"}</span>
                 </div>
               </div>
-
-              <div className="mt-4">
-                <div className="flex justify-between text-sm mb-1">
-                  <span>Registrations</span>
-                  <span>
-                    {event.current_registrations || 0}/{event.max_team_size || 'Unlimited'}
-                  </span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div
-                    className="bg-primary h-2 rounded-full"
-                    style={{ width: `${event.max_team_size ? (event.current_registrations / event.max_team_size * 100) : 0}%` }}
-                  />
-                </div>
-              </div>
             </div>
 
             <div className="bg-gray-50 px-5 py-3 flex justify-end space-x-2 border-t">
@@ -234,6 +230,13 @@ export default function MyEvents() {
               </Button>
               <Button size="sm" asChild>
                 <Link to={`/edit-event/${event.id}`}>Edit Event</Link>
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => handleDeleteEvent(event.id)}
+              >
+                Delete Event
               </Button>
             </div>
           </div>
