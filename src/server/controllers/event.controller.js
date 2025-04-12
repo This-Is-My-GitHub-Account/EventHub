@@ -44,11 +44,24 @@ const deleteEvent = asyncHandler(async (req, res) => {
   res.json({ message: 'Event deleted' });
 });
 
+const getEventParticipationCount = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  
+  if (!id) {
+    res.status(400);
+    throw new Error("Event ID is required");
+  }
+  
+  const count = await eventService.getEventParticipationCount(id);
+  
+  res.status(200).json({ count });
+});
 module.exports = {
   createEvent,
   getEvents,
   getEventById,
   getEventsForCurrentUser,
   updateEvent,
-  deleteEvent
+  deleteEvent,
+  getEventParticipationCount
 };

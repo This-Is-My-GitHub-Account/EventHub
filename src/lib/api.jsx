@@ -71,6 +71,7 @@ export const eventsApi = {
   update: (id, data) => api.put(`/events/${id}`, data),
   delete: (id) => api.delete(`/events/${id}`),
   getUserEvents: () => api.get('/events/myEvents'),
+  getEventParticipationCount: (id) => api.get(`/events/${id}/participation-count`),
 };
 
 // Registration API

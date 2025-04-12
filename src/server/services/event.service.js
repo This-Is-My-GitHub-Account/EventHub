@@ -74,11 +74,24 @@ const deleteEvent = async (id, userId) => {
   return { success: true };
 };
 
+const getEventParticipationCount = async (eventId) => {
+  // Use a head request with count option to only retrieve the count
+  const { count, error } = await supabase
+    .from('team_members')
+    .select('*', { head: true, count: 'exact' })
+    .eq('event_id', eventId);
+  
+  if (error) throw error;
+  
+  return count;
+};
+
 module.exports = {
   createEvent,
   getEvents,
   getEventById,
   getCurrentUserEvents,
   updateEvent,
-  deleteEvent
+  deleteEvent,
+  getEventParticipationCount
 };

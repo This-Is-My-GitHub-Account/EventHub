@@ -8,7 +8,8 @@ const {
   getEventById,
   getEventsForCurrentUser,
   updateEvent,
-  deleteEvent
+  deleteEvent,
+  getEventParticipationCount
 } = require('../controllers/event.controller');
 
 const router = express.Router();
@@ -89,5 +90,19 @@ router.route('/:id')
  */
 router.route('/:id')
   .delete(deleteEvent);
+
+  /**
+ * @api {get} /api/events/:id/participation-count Get event participation count
+ * @apiName GetEventParticipationCount
+ * @apiGroup Event
+ *
+ * @apiParam (URL Parameter) {UUID} id The ID of the event.
+ *
+ * @apiSuccess {Number} count The number of registrations (rows in team_members) for the event.
+ *
+ * @apiError (Error 400) BadRequest Event ID is missing or invalid.
+ * @apiError (Error 404) NotFound No participation data found.
+ */
+router.get('/:id/participation-count', getEventParticipationCount);
 
 module.exports = router;
