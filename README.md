@@ -17,10 +17,8 @@ EventHub is a comprehensive web application designed to streamline the managemen
   - React
   - Tailwind CSS
   - shadcn/ui Components
-  - React Query
-  - React Router DOM
-  - React Hook Form
-
+  
+  
 - **Backend**:
   - Supabase (Database & Authentication)
   - Node.js
