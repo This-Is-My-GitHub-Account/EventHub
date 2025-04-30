@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { registrationApi } from "../../lib/api";
 import { Users, ChevronLeft, Calendar } from "lucide-react";
+import Header from "../../components/layout/header";
+import Footer from "../../components/layout/footer";
 
 const ViewRegisteredTeams = () => {
   const { eventId } = useParams();
@@ -75,7 +77,10 @@ const ViewRegisteredTeams = () => {
   }
 
   return (
+    <div className="min-h-screen flex flex-col bg-white">
+          <Header />
     <div className="container mx-auto px-4 py-8">
+     
       <div className="bg-white border border-[#d5efe6] rounded-lg shadow-sm overflow-hidden">
         <div className="p-4 border-b border-[#d5efe6] flex items-center justify-between">
           <div className="flex items-center">
@@ -113,6 +118,8 @@ const ViewRegisteredTeams = () => {
           </Button>
         </div>
       </div>
+      </div>
+      <Footer/>
     </div>
   );
 };
