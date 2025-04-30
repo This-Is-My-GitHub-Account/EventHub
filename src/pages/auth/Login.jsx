@@ -7,11 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { authApi } from "../../lib/api";
+import { useAuth } from "@/context/AuthContext"; 
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { login } = useAuth(); 
+  
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -79,18 +81,10 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      // Call the login API with the form data
-      const response = await authApi.login({
-        email: formData.email,
-        password: formData.password
-      });
-
-      // Store user token in localStorage or sessionStorage based on rememberMe
-      const storage = formData.rememberMe ? localStorage : sessionStorage;
-      storage.setItem('userToken', response.data.token);
-      storage.setItem('userData', JSON.stringify(response.data));
-
-      // Navigate to the redirect page
+      // Use the login function from AuthContext
+      await login(formData.email, formData.password, formData.rememberMe);
+      
+      // Navigate to the redirect page after successful login
       navigate(redirectTo);
     } catch (err) {
       console.error("Login error:", err);

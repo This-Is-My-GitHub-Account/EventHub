@@ -88,10 +88,7 @@ export default function SignUpPage() {
     try {
       const response = await authApi.register(userData)
       
-      // Store the token and user data
-      const { token, ...user } = response.data
-      localStorage.setItem('userToken', token)
-      localStorage.setItem('userData', JSON.stringify(user))
+
       
       // Redirect to dashboard
       navigate("/dashboard")
