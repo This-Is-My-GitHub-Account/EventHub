@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { registrationApi } from "../../lib/api";
 
 const ViewRegisteredTeams = () => {
@@ -53,15 +52,7 @@ const ViewRegisteredTeams = () => {
         {teams.map((team) => (
           <div key={team.id} className="border rounded-lg p-4">
             <h3 className="text-lg font-semibold mb-2">{team.name}</h3>
-            <Badge className="bg-blue-500">Leader: {team.leader_id}</Badge>
-            <ul className="mt-2 space-y-1">
-              {team.members.map((member) => (
-                <li key={member.id} className="text-sm">
-                  <span className="font-medium">{member.name}</span>
-                  <span className="text-gray-500 ml-2">{member.email}</span>
-                </li>
-              ))}
-            </ul>
+            <p className="text-sm text-gray-500">Created At: {new Date(team.created_at).toLocaleString()}</p>
           </div>
         ))}
       </div>
