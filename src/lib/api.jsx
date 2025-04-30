@@ -78,6 +78,7 @@ export const eventsApi = {
 export const registrationApi = {
   register: (data) => api.post('/registrations', data),
   getUserRegistrations: () => api.get('/registrations'),
+  getTeamsByEvent: (eventId) => api.get(`/registrations/${eventId}`),
 };
 
 // Auth API
@@ -88,4 +89,3 @@ export const authApi = {
     getCurrentUserByMail: () => api.get('/auth/by-email'),
     updateProfile: (data) => api.put('/profile', data),  // <-- Added updateProfile route
   };
-  

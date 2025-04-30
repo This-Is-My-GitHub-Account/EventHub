@@ -13,6 +13,7 @@ import LoginPage from "./pages/auth/login";
 import SignUpPage from "./pages/auth/signup";
 import CreateEventPage from "./pages/create-event/page";
 import RegisterForm from "./pages/event-details/register-form";
+import ViewRegisteredTeams from "./pages/dashboard/view-registered-teams";
 
 // Auth Guard
 const AuthGuard = ({ children }) => {
@@ -54,6 +55,14 @@ function App() {
             element={
               <AuthGuard>
                 <CreateEventPage />
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/dashboard/view-registered-teams/:eventId"
+            element={
+              <AuthGuard>
+                <ViewRegisteredTeams />
               </AuthGuard>
             }
           />

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Link, useNavigate } from "react-router-dom"
 import { eventsApi, registrationApi } from "../../lib/api" // Import the API functions
+import ViewRegisteredTeams from "./view-registered-teams"
 
 export default function MyEvents() {
   const [activeTab, setActiveTab] = useState("registered")
@@ -237,6 +238,13 @@ export default function MyEvents() {
                 onClick={() => handleDeleteEvent(event.id)}
               >
                 Delete Event
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => navigate(`/dashboard/view-registered-teams/${event.id}`)}
+              >
+                View Registered Teams
               </Button>
             </div>
           </div>
