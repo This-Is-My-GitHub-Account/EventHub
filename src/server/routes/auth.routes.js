@@ -1,7 +1,8 @@
 const express = require('express');
 const { validate } = require('../middleware/validation.middleware');
 const { userSchema } = require('../utils/validators');
-const { register, login,getUserIdByEmail,updateProfile } = require('../controllers/auth.controller');
+const { register, login, getUserIdByEmail, getProfile, updateProfile } = require('../controllers/auth.controller');
+const { protect } = require('../middleware/auth.middleware');
 
 const router = express.Router();
 
@@ -52,6 +53,20 @@ router.post('/login', login);
 router.get('/by-email', getUserIdByEmail);
 
 /**
+ * @api {get} /api/profile Get user profile
+ * @apiName GetUserProfile
+ * @apiGroup Profile
+ *
+ * @apiHeader {String} Authorization Bearer token for authentication.
+ *
+ * @apiSuccess {Object} user The complete user profile object.
+ *
+ * @apiError (Error 401) Unauthorized User is not authenticated.
+ * @apiError (Error 404) NotFound The profile was not found.
+ */
+router.get('/profile', protect, getProfile);
+
+/**
  * @api {put} /api/profile Update user profile
  * @apiName UpdateUserProfile
  * @apiGroup Profile
@@ -72,5 +87,6 @@ router.get('/by-email', getUserIdByEmail);
  * @apiError (Error 401) Unauthorized User is not authenticated.
  * @apiError (Error 404) NotFound The user was not found.
  */
-router.put('/', updateProfile);
+router.put('/', protect, updateProfile);
+
 module.exports = router;

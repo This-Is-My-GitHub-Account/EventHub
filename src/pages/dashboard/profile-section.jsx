@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState,useEffect } from "react"
 import { User, Camera, Pencil, Mail, Phone, Calendar, Building, Cake, UserCheck } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -9,32 +9,63 @@ import { Separator } from "@/components/ui/separator"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-
+import { authApi } from "../../lib/api"
 export default function ProfileSection() {
   const [user, setUser] = useState({
-    name: "John Doe",
-    email: "john.doe@example.com",
-    gender: "Male",
-    stream: "Computer Engineering",
-    date_of_birth: "2000-05-15",
-    passing_out_year: "2024",
-    phoneNumber: "9876543210",
-    address: null,
+    name: "",
+    email: "",
+    gender: "",
+    stream: "",
+    date_of_birth: "",
+    passing_out_year: "",
+    phoneNumber: "",
     profilePicture: null,
-    bio: "Computer Engineering student passionate about web development and AI."
   })
+  const [loading, setLoading] = useState(true)
+  const [updating, setUpdating] = useState(false)
+  const [error, setError] = useState(null)
+  const [success, setSuccess] = useState(false)
+
 
   const [formData, setFormData] = useState({
-    name: user.name || "",
-    email: user.email || "",
-    phoneNumber: user.phoneNumber || "",
-    date_of_birth: user.date_of_birth || "",
-    gender: user.gender || "",
-    stream: user.stream || "",
-    passing_out_year: user.passing_out_year || "",
-    address: user.address || "",
-    bio: user.bio || ""
+    name: "",
+    email: "",
+    phoneNumber: "",
+    date_of_birth: "",
+    gender: "",
+    stream: "",
+    passing_out_year: "",
   })
+  
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        setLoading(true)
+        const response = await authApi.getProfile()
+        if (response && response.data) {
+          const profileData = response.data
+          setUser(profileData)
+          
+          setFormData({
+            name: profileData.name || "",
+            email: profileData.email || "",
+            phoneNumber: profileData.phoneNumber || "",
+            date_of_birth: profileData.date_of_birth || "",
+            gender: profileData.gender || "",
+            stream: profileData.stream || "",
+            passing_out_year: profileData.passing_out_year || "",
+          })
+        }
+      } catch (err) {
+        console.error('Failed to fetch profile', err)
+        setError('Failed to load profile data. Please try again later.')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchUserProfile()
+  }, [])
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
@@ -54,14 +85,22 @@ export default function ProfileSection() {
 
   const handleUpdateProfile = async () => {
     try {
-      const response = await authApi.updateProfile(formData);
+      setUpdating(true)
+      setError(null)
+      
+      const response = await authApi.updateProfile(formData)
       if (response && response.data) {
-        setUser(response.data);
+        setUser(response.data)
+        setSuccess(true)
+        setTimeout(() => setSuccess(false), 3000)
       }
-    } catch (error) {
-      console.error('Failed to update profile', error);
+    } catch (err) {
+      console.error('Failed to update profile', err)
+      setError('Failed to update profile. Please try again.')
+    } finally {
+      setUpdating(false)
     }
-  };
+  }
 
   // Calculate profile completion percentage
   const calculateProfileCompletion = () => {
@@ -78,7 +117,7 @@ export default function ProfileSection() {
   }
 
   const completionPercentage = calculateProfileCompletion()
-
+  
   return (
     <div className="bg-white rounded-lg border border-[#d5efe6] shadow-sm">
       <div className="p-6">
@@ -108,9 +147,7 @@ export default function ProfileSection() {
                   <Mail className="h-4 w-4 mr-1 text-[#2c7873]" /> 
                   {user.email}
                 </p>
-                {user.bio && (
-                  <p className="text-gray-600 mt-2 text-sm italic">"{user.bio}"</p>
-                )}
+                
               </div>
 
               <Sheet>
@@ -181,10 +218,10 @@ export default function ProfileSection() {
                           <SelectValue placeholder="Select gender" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="Male">Male</SelectItem>
-                          <SelectItem value="Female">Female</SelectItem>
-                          <SelectItem value="Other">Other</SelectItem>
-                          <SelectItem value="Prefer not to say">Prefer not to say</SelectItem>
+                          <SelectItem value="male">Male</SelectItem>
+                          <SelectItem value="female">Female</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
+                          <SelectItem value="prefer not to say">Prefer not to say</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -199,10 +236,10 @@ export default function ProfileSection() {
                           <SelectValue placeholder="Select department" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="Computer Engineering">Computer Engineering</SelectItem>
-                          <SelectItem value="Information Technology">Information Technology</SelectItem>
-                          <SelectItem value="Electrical Engineering">Electrical Engineering</SelectItem>
-                          <SelectItem value="Mechanical Engineering">Mechanical Engineering</SelectItem>
+                          <SelectItem value="computer">Computer Engineering</SelectItem>
+                          <SelectItem value="civil">Civil Engineering</SelectItem>
+                          <SelectItem value="electrical">Electrical Engineering</SelectItem>
+                          <SelectItem value="mechanical">Mechanical Engineering</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -210,7 +247,7 @@ export default function ProfileSection() {
                     <div className="space-y-2 ml-4 mr-3">
                       <Label htmlFor="passing_out_year">Passing Out Year</Label>
                       <Select
-                        value={formData.passing_out_year}
+                        value={formData.passing_out_year.toString()}
                         onValueChange={(value) => handleSelectChange("passing_out_year", value)}
                       >
                         <SelectTrigger>
@@ -226,28 +263,9 @@ export default function ProfileSection() {
                       </Select>
                     </div>
 
-                    <div className="space-y-2 ml-4 mr-3">
-                      <Label htmlFor="address">Address</Label>
-                      <Textarea
-                        id="address"
-                        name="address"
-                        value={formData.address}
-                        onChange={handleInputChange}
-                        rows={3}
-                      />
-                    </div>
+                    
 
-                    <div className="space-y-2 ml-4 mr-3">
-                      <Label htmlFor="bio">Bio</Label>
-                      <Textarea
-                        id="bio"
-                        name="bio"
-                        value={formData.bio}
-                        onChange={handleInputChange}
-                        rows={3}
-                        placeholder="Tell us about yourself"
-                      />
-                    </div>
+                    
 
                     <Button 
                       className="w-full mt-6 bg-[#2c7873] hover:bg-[#1c5853] text-white"

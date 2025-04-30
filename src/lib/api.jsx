@@ -20,18 +20,18 @@ api.interceptors.request.use(async (config) => {
   } catch (error) {
     console.error("Error getting Supabase session:", error);
   }
-  
+    
   // If no supabase token, check for our app token
   const token = localStorage.getItem('userToken') || sessionStorage.getItem('userToken');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
-  
+    
   // Don't set Content-Type for FormData requests
   if (config.data instanceof FormData) {
     delete config.headers['Content-Type'];
   }
-  
+    
   return config;
 });
 
@@ -45,7 +45,7 @@ api.interceptors.response.use(
       localStorage.removeItem('userData');
       sessionStorage.removeItem('userToken');
       sessionStorage.removeItem('userData');
-      
+            
       // Redirect to login if not already there
       if (!window.location.pathname.includes('/login')) {
         window.location.href = `/login?redirectTo=${encodeURIComponent(window.location.pathname)}`;
@@ -82,10 +82,10 @@ export const registrationApi = {
 
 // Auth API
 export const authApi = {
-    register: (data) => api.post('/auth/register', data),
-    login: (data) => api.post('/auth/login', data),
-    logout: () => api.post('/auth/logout'),
-    getCurrentUserByMail: () => api.get('/auth/by-email'),
-    updateProfile: (data) => api.put('/profile', data),  // <-- Added updateProfile route
-  };
-  
+  register: (data) => api.post('/auth/register', data),
+  login: (data) => api.post('/auth/login', data),
+  logout: () => api.post('/auth/logout'),
+  getCurrentUserByMail: () => api.get('/auth/by-email'),
+  getProfile: () => api.get('/auth/profile'),  
+  updateProfile: (data) => api.put('/auth/profile', data),
+};
