@@ -2,7 +2,8 @@ const express = require('express');
 const { protect } = require('../middleware/auth.middleware');
 const {
   registerForEvent,
-  getUserRegistrations
+  getUserRegistrations,
+  getTeamsByEvent
 } = require('../controllers/registration.controller');
 const { validate } = require('../middleware/validation.middleware');
 const { teamSchema } = require('../utils/validators');
@@ -32,5 +33,15 @@ router.post('/', validate(teamSchema), registerForEvent);
  */
 router.get('/', getUserRegistrations);
 
+/**
+ * @api {get} /api/event-registration/:eventId Get all teams registered for an event
+ * @apiName GetTeamsByEvent
+ * @apiGroup EventRegistration
+ *
+ * @apiParam {UUID} eventId ID of the event.
+ *
+ * @apiSuccess {Object[]} teams An array of team objects registered for the event.
+ */
+router.get('/:eventId', getTeamsByEvent);
 
 module.exports = router;
