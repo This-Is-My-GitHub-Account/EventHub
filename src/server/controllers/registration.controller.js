@@ -15,7 +15,14 @@ const getUserRegistrations = asyncHandler(async (req, res) => {
   res.status(200).json(registrations);
 });
 
+const getTeamsByEvent = asyncHandler(async (req, res) => {
+  const { eventId } = req.params;
+  const teams = await registrationService.getTeamsByEvent(eventId);
+  res.status(200).json(teams);
+});
+
 module.exports = {
   registerForEvent,
-  getUserRegistrations
+  getUserRegistrations,
+  getTeamsByEvent
 };
