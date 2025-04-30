@@ -1,8 +1,8 @@
 import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
-// Import the AuthProvider from your authContext file
-import AuthProvider from "../src/context/AuthContext"
+// Correctly import AuthProvider
+import { AuthProvider, useAuth } from "./context/AuthContext";
 
 // Pages
 import HomePage from "./pages/home/page";
@@ -14,19 +14,17 @@ import SignUpPage from "./pages/auth/signup";
 import CreateEventPage from "./pages/create-event/page";
 import RegisterForm from "./pages/event-details/register-form";
 
-// Auth Guard Component
+// Auth Guard
 const AuthGuard = ({ children }) => {
-  // Here replace with your actual authentication logic using useAuth if necessary
-  const isAuthenticated = true;
+  const { isAuthenticated } = useAuth();
   return isAuthenticated ? children : <Navigate to="/login" />;
 };
 
 function App() {
   return (
+    <BrowserRouter>
     <AuthProvider>
-      <BrowserRouter>
         <Routes>
-          {/* Public Routes */}
           <Route path="/" element={<HomePage />} />
           <Route path="/events" element={<EventsPage />} />
           <Route path="/event-details/:id" element={<EventDetailsPage />} />
@@ -60,11 +58,10 @@ function App() {
             }
           />
 
-          {/* Fallback */}
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
-      </BrowserRouter>
     </AuthProvider>
+      </BrowserRouter>
   );
 }
 

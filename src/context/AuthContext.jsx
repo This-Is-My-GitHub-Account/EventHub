@@ -51,6 +51,7 @@ export const AuthProvider = ({ children }) => {
       storage.setItem('userData', JSON.stringify(userData));
       
       setCurrentUser(userData);
+      navigate('/');
       return userData;
     } catch (error) {
       throw error;
