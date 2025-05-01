@@ -80,16 +80,36 @@ const getUserIdByEmail = async (email) => {
   return data;
 };
 
-
-const updateProfile = async (userId, updateData) => {
+const getProfile = async (userId) => {
   const { data, error } = await supabase
     .from('users')
-    .update(updateData)
+    .select('*')
+    .eq('id', userId)
+    .single();
+    
+  if (error) throw error;
+  return data;
+};
+
+const updateProfile = async (userId, updateData) => {
+  console.log("-------------service working--------");
+  console.log(updateData);
+  const { data, error } = await supabase
+    .from('users')
+    .update({
+      email: updateData.email,
+      name: updateData.name,
+      gender: updateData.gender,
+      stream: updateData.stream,
+      date_of_birth: updateData.date_of_birth,
+      passing_out_year: updateData.passing_out_year,
+    })
     .eq('id', userId)
     .select()
     .single();
     
   if (error) throw error;
+  console.log(data);
   return data;
 };
 
@@ -98,5 +118,6 @@ module.exports = {
   register,
   login,
   getUserIdByEmail,
+  getProfile,
   updateProfile
 };

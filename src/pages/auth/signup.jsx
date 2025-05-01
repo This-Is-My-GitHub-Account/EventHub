@@ -106,11 +106,10 @@ export default function SignUpPage() {
 
   const departments = [
     { value: "computer", label: "Computer Engineering" },
-    { value: "electronics", label: "Electronics & Telecommunication" },
     { value: "civil", label: "Civil Engineering" },
     { value: "mechanical", label: "Mechanical Engineering" },
     { value: "electrical", label: "Electrical Engineering" },
-    { value: "it", label: "Information Technology" }
+    
   ]
 
   const currentYear = new Date().getFullYear()
