@@ -87,6 +87,6 @@ router.get('/profile', protect, getProfile);
  * @apiError (Error 401) Unauthorized User is not authenticated.
  * @apiError (Error 404) NotFound The user was not found.
  */
-router.put('/', protect, updateProfile);
+router.put('/profile', protect, updateProfile);
 
 module.exports = router;

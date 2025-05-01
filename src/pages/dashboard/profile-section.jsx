@@ -18,7 +18,7 @@ export default function ProfileSection() {
     stream: "",
     date_of_birth: "",
     passing_out_year: "",
-    phoneNumber: "",
+    
     profilePicture: null,
   })
   const [loading, setLoading] = useState(true)
@@ -30,7 +30,7 @@ export default function ProfileSection() {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
-    phoneNumber: "",
+    
     date_of_birth: "",
     gender: "",
     stream: "",
@@ -49,7 +49,6 @@ export default function ProfileSection() {
           setFormData({
             name: profileData.name || "",
             email: profileData.email || "",
-            phoneNumber: profileData.phoneNumber || "",
             date_of_birth: profileData.date_of_birth || "",
             gender: profileData.gender || "",
             stream: profileData.stream || "",
@@ -69,6 +68,7 @@ export default function ProfileSection() {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
+    
     setFormData({
       ...formData,
       [name]: value,
@@ -85,22 +85,14 @@ export default function ProfileSection() {
 
   const handleUpdateProfile = async () => {
     try {
-      setUpdating(true)
-      setError(null)
-      
-      const response = await authApi.updateProfile(formData)
+      const response = await authApi.updateProfile(formData);
       if (response && response.data) {
-        setUser(response.data)
-        setSuccess(true)
-        setTimeout(() => setSuccess(false), 3000)
+        setUser(response.data);
       }
-    } catch (err) {
-      console.error('Failed to update profile', err)
-      setError('Failed to update profile. Please try again.')
-    } finally {
-      setUpdating(false)
+    } catch (error) {
+      console.error('Failed to update profile', error);
     }
-  }
+  };
 
   // Calculate profile completion percentage
   const calculateProfileCompletion = () => {
@@ -187,15 +179,7 @@ export default function ProfileSection() {
                       />
                     </div>
 
-                    <div className="space-y-2 ml-4 mr-3">
-                      <Label htmlFor="phoneNumber">Phone Number</Label>
-                      <Input
-                        id="phoneNumber"
-                        name="phoneNumber"
-                        value={formData.phoneNumber}
-                        onChange={handleInputChange}
-                      />
-                    </div>
+                    
 
                     <div className="space-y-2 ml-4 mr-3">
                       <Label htmlFor="date_of_birth">Date of Birth</Label>
