@@ -15,7 +15,7 @@ export default function EventCard({ event }) {
       </span>
     );
   };
-  const handleViewEvent = (event) => {     navigate(`/event-details/${event.id}`, { state: { eventData: event } })   }
+  const handleViewEvent = (event) => {     navigate(`/event-details/${event.id}`)   }
   return (
     <div className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300">
       {/* Event Image */}

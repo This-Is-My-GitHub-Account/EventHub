@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useParams, useNavigate, useLocation } from "react-router-dom"
+import { useParams, useNavigate } from "react-router-dom"
 import {
   CalendarClock,
   MapPin,
@@ -11,6 +11,8 @@ import {
   Share2,
   Heart,
   Award,
+  Calendar,
+  DollarSign,
 } from "lucide-react"
 import Header from "../../components/layout/header"
 import Footer from "../../components/layout/footer"
@@ -30,128 +32,129 @@ import {
 } from "@/components/ui/dialog"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import RegisterForm from "./register-form"
+import { eventsApi, registrationApi } from "../../lib/api" // Import the API from api.jsx
 
 export default function EventDetailsPage() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const location = useLocation()
   const [event, setEvent] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [isRegistered, setIsRegistered] = useState(false)
+  const [participationCount, setParticipationCount] = useState(0)
   const [showRegisterDialog, setShowRegisterDialog] = useState(false)
 
   useEffect(() => {
-    // Check if event data was passed through navigation state
-    const passedEventData = location.state?.eventData
-
-    if (passedEventData) {
-      // Use the passed event data
-      const fullEventData = {
-        ...passedEventData,
-        department: passedEventData.department || "Computer Engineering",
-        departmentId: passedEventData.departmentId || "cs",
-        maxRegistrations: passedEventData.maxRegistrations || 150,
-        isTechnical: passedEventData.type === "Technical",
-        isFree: passedEventData.registrationFee ? false : true,
-        registrationFee: passedEventData.registrationFee || "₹500",
-        teamEvent: passedEventData.teamEvent !== undefined ? passedEventData.teamEvent : true,
-        teamSize: passedEventData.teamSize || { min: 2, max: 4 },
-        prize: passedEventData.prize || "₹20,000",
-        organizer: passedEventData.organizer || "Tech Club",
-        contact: passedEventData.contact || "techclub@college.edu",
-        image: passedEventData.image || "/api/placeholder/320/180",
-        description: passedEventData.description || `
-          <p>Join us for the biggest hackathon of the year! Build innovative solutions to real-world problems in just 24 hours.</p>
-          <p>This is an opportunity to showcase your coding skills, collaborate with talented peers, and win exciting prizes.</p>
-          <h3>Problem Statements:</h3>
-          <ul>
-            <li>Smart Campus Solutions</li>
-            <li>Healthcare Innovations</li>
-            <li>Fintech Applications</li>
-            <li>Sustainable Development</li>
-          </ul>
-          <h3>Judging Criteria:</h3>
-          <ul>
-            <li>Innovation and Creativity (30%)</li>
-            <li>Technical Complexity (25%)</li>
-            <li>Practicality and Implementation (25%)</li>
-            <li>Presentation (20%)</li>
-          </ul>
-        `,
-        rules: passedEventData.rules || `
-          <ol>
-            <li>Teams must consist of 2-4 members.</li>
-            <li>All team members must be currently enrolled students.</li>
-            <li>Code must be original and developed during the hackathon.</li>
-            <li>Use of open-source libraries and APIs is allowed.</li>
-            <li>Final submission must include source code and presentation.</li>
-            <li>Judges' decision will be final and binding.</li>
-          </ol>
-        `,
-        timeline: passedEventData.timeline || [
-          { time: "08:30 AM", event: "Registration & Check-in" },
-          { time: "09:00 AM", event: "Opening Ceremony" },
-          { time: "09:30 AM", event: "Hackathon Begins" },
-          { time: "01:00 PM", event: "Lunch Break" },
-          { time: "06:00 PM", event: "Dinner" },
-          { time: "09:00 AM (Next Day)", event: "Submission Deadline" },
-          { time: "10:00 AM - 12:00 PM", event: "Presentations" },
-          { time: "01:00 PM", event: "Prize Distribution & Closing Ceremony" },
-        ],
-      }
-      
-      setEvent(fullEventData)
-      setLoading(false)
-    } else {
-      // Fallback to fetch if no state data provided
-      setTimeout(() => {
-        // Create a default event based on id
-        const defaultEvent = {
-          id: id,
-          title: "Event " + id,
-          type: "Technical",
-          date: "April 15, 2025",
-          time: "9:00 AM - 6:00 PM",
-          location: "Main Auditorium",
-          registrations: 78,
-          image: "/api/placeholder/320/180",
-          status: "upcoming",
-          department: "Computer Engineering",
-          departmentId: "cs",
-          maxRegistrations: 150,
-          isTechnical: true,
-          isFree: false,
-          registrationFee: "₹500",
-          teamEvent: true,
-          teamSize: { min: 2, max: 4 },
-          prize: "₹20,000",
-          organizer: "Tech Club",
-          contact: "techclub@college.edu",
-          description: `<p>Default event description for event ID ${id}.</p>`,
-          rules: `<ol><li>Default rules for event ID ${id}.</li></ol>`,
+    const fetchEventData = async () => {
+      try {
+        setLoading(true)
+        // Fetch event data using eventsApi.getById
+        const response = await eventsApi.getById(id)
+        
+        // Map backend fields to our component's expected structure
+        const eventData = response.data;
+        const formattedEvent = {
+          id: eventData.id,
+          title: eventData.event_name,
+          type: eventData.category,
+          date: `${eventData.important_dates?.start_date}${eventData.important_dates?.end_date !== eventData.important_dates?.start_date ? 
+            ` to ${eventData.important_dates?.end_date}` : ''}`,
+          time: eventData.event_time || "All day",
+          location: eventData.venue,
+          image: eventData.image_url || "/api/placeholder/320/180",
+          status: new Date(eventData.registration_deadline) > new Date() ? "upcoming" : "closed",
+          department: eventData.department,
+          maxRegistrations: eventData.max_participants || 100,
+          isTechnical: eventData.category === "Technical",
+          isFree: eventData.registration_fee === 0,
+          registrationFee: eventData.registration_fee > 0 ? `₹${eventData.registration_fee}` : "Free",
+          teamEvent: eventData.participation_type === "Team",
+          teamSize: { 
+            min: eventData.min_team_size || 1, 
+            max: eventData.max_team_size || 1 
+          },
+          prize: eventData.prizes ? `₹${eventData.prizes.first || ""}` : "",
+          organizer: eventData.organizer,
+          contact: eventData.contact_info,
+          description: eventData.event_description,
+          rules: eventData.rules ? eventData.rules.replace(/\n/g, '<br>') : "",
+          registrationCloses: new Date(eventData.registration_deadline).toLocaleDateString(undefined, 
+            { year: "numeric", month: "long", day: "numeric" }),
+          created_at: eventData.created_at,
+          event_type: eventData.event_type,
+          // Create a timeline from available dates
           timeline: [
-            { time: "09:00 AM", event: "Opening Ceremony" },
-            { time: "01:00 PM", event: "Closing Ceremony" },
-          ],
+            { 
+              time: "Registration Deadline", 
+              event: new Date(eventData.registration_deadline).toLocaleDateString(undefined, 
+                { year: "numeric", month: "long", day: "numeric" })
+            },
+            { 
+              time: "Event Start", 
+              event: new Date(eventData.important_dates?.start_date).toLocaleDateString(undefined, 
+                { year: "numeric", month: "long", day: "numeric" })
+            }
+          ]
         }
         
-        setEvent(defaultEvent)
+        if (eventData.important_dates?.end_date !== eventData.important_dates?.start_date) {
+          formattedEvent.timeline.push({
+            time: "Event End",
+            event: new Date(eventData.important_dates?.end_date).toLocaleDateString(undefined, 
+              { year: "numeric", month: "long", day: "numeric" })
+          })
+        }
+        
+        setEvent(formattedEvent)
+        
+        // Fetch participation count for the event
+        try {
+          const countResponse = await eventsApi.getEventParticipationCount(id)
+          setParticipationCount(countResponse.data.count || 0)
+        } catch (countError) {
+          console.error("Error fetching participation count:", countError)
+          setParticipationCount(0)
+        }
+        
+      } catch (err) {
+        console.error("Error fetching event data:", err)
+        setError("Failed to load event details. Please try again later.")
+      } finally {
         setLoading(false)
-      }, 500)
+      }
     }
 
     const checkAuth = () => {
-      setIsAuthenticated(true)
+      // Check if user is authenticated by looking for user token
+      const token = localStorage.getItem('userToken') || sessionStorage.getItem('userToken')
+      setIsAuthenticated(!!token)
     }
 
-    const checkRegistration = () => {
-      setIsRegistered(false)
+    const checkRegistration = async () => {
+      if (isAuthenticated) {
+        try {
+          // Fetch user registrations to check if already registered
+          const registrationsResponse = await registrationApi.getUserRegistrations()
+          const registrations = registrationsResponse.data
+          
+          // Check if user is registered for this event
+          const isUserRegistered = registrations.some(reg => reg.eventId === id)
+          setIsRegistered(isUserRegistered)
+        } catch (err) {
+          console.error("Error checking registration status:", err)
+          setIsRegistered(false)
+        }
+      }
     }
 
+    fetchEventData()
     checkAuth()
-    checkRegistration()
-  }, [id, location.state])
+    // Only check registration if user is authenticated
+    if (isAuthenticated) {
+      checkRegistration()
+    }
+  }, [id, isAuthenticated])
 
   const handleRegisterClick = () => {
     if (!isAuthenticated) {
@@ -162,12 +165,8 @@ export default function EventDetailsPage() {
   }
 
   const formatDate = (dateString) => {
-    // If dateString is already formatted (like "April 15, 2025"), return it as is
-    if (dateString && !dateString.includes("-")) {
-      return dateString
-    }
+    if (!dateString) return ""
     
-    // Otherwise format date from ISO format
     try {
       const options = { year: "numeric", month: "long", day: "numeric" }
       return new Date(dateString).toLocaleDateString(undefined, options)
@@ -188,26 +187,51 @@ export default function EventDetailsPage() {
     )
   }
 
+  if (error || !event) {
+    return (
+      <div className="min-h-screen flex flex-col bg-gradient-to-b from-blue-50 via-white to-blue-100">
+        <Header />
+        <main className="flex-grow flex items-center justify-center">
+          <div className="text-center p-8">
+            <AlertCircle size={48} className="mx-auto mb-4 text-red-500" />
+            <h2 className="text-2xl font-bold mb-2">Error Loading Event</h2>
+            <p className="text-gray-600 mb-6">{error || "Event not found"}</p>
+            <Button onClick={() => navigate("/events")}>Back to Events</Button>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    )
+  }
+
+  const registrationProgress = Math.min(100, ((participationCount / (event.maxRegistrations || 100)) * 100))
+
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-blue-50 via-white to-blue-100">
       <Header />
       <main className="flex-grow py-8">
         <div className="container mx-auto px-4">
           <div className="relative h-64 md:h-96 rounded-xl overflow-hidden mb-8 shadow-lg">
-            <img src={event.image} alt={event.title} className="w-full h-full object-cover" />
+            <img 
+              src={event.image || "/api/placeholder/320/180"} 
+              alt={event.title} 
+              className="w-full h-full object-cover" 
+            />
             <div className="absolute inset-0 bg-gradient-to-t from-[#003366]/80 to-transparent flex flex-col justify-end p-6">
               <div className="flex flex-wrap gap-2 mb-3">
-                <Badge>{event.department}</Badge>
-                <Badge variant="secondary">{event.type}</Badge>
+                <Badge>{event.department || "Department"}</Badge>
+                <Badge variant="secondary">{event.type || "Event"}</Badge>
                 <Badge variant="outline" className="bg-white/80">
-                  {event.teamEvent ? `Team (${event.teamSize.min}-${event.teamSize.max})` : "Individual"}
+                  {event.teamEvent 
+                    ? `Team (${event.teamSize?.min || 1}-${event.teamSize?.max || 1})` 
+                    : "Individual"}
                 </Badge>
               </div>
               <h1 className="text-2xl md:text-4xl text-white font-bold">{event.title}</h1>
               <div className="flex flex-wrap mt-4 gap-x-6 gap-y-2 text-white/90">
                 <div className="flex items-center">
                   <CalendarClock size={16} className="mr-2" />
-                  <span>{formatDate(event.date)}</span>
+                  <span>{event.date}</span>
                 </div>
                 <div className="flex items-center">
                   <Clock size={16} className="mr-2" />
@@ -250,12 +274,12 @@ export default function EventDetailsPage() {
                         <li className="flex justify-between">
                           <span className="text-gray-600">Team Size:</span>
                           <span className="font-medium">
-                            {event.teamEvent ? `${event.teamSize.min}-${event.teamSize.max} members` : "Individual"}
+                            {event.teamEvent ? `${event.teamSize?.min || 1}-${event.teamSize?.max || 1} members` : "Individual"}
                           </span>
                         </li>
                         <li className="flex justify-between">
                           <span className="text-gray-600">Spots Remaining:</span>
-                          <span className="font-medium">{event.maxRegistrations - event.registrations}</span>
+                          <span className="font-medium">{(event.maxRegistrations || 0) - participationCount}</span>
                         </li>
                       </ul>
                     </div>
@@ -266,10 +290,32 @@ export default function EventDetailsPage() {
                         <h3 className="font-semibold text-lg">Prizes & Details</h3>
                       </div>
                       <ul className="space-y-2 text-sm">
-                        <li className="flex justify-between">
-                          <span className="text-gray-600">Prize Pool:</span>
-                          <span className="font-medium">{event.prize}</span>
-                        </li>
+                        {event.prizes && (
+                          <>
+                            <li className="flex justify-between">
+                              <span className="text-gray-600">First Prize:</span>
+                              <span className="font-medium">{event.prizes.first || event.prize}</span>
+                            </li>
+                            {event.prizes.second && (
+                              <li className="flex justify-between">
+                                <span className="text-gray-600">Second Prize:</span>
+                                <span className="font-medium">{event.prizes.second}</span>
+                              </li>
+                            )}
+                            {event.prizes.third && (
+                              <li className="flex justify-between">
+                                <span className="text-gray-600">Third Prize:</span>
+                                <span className="font-medium">{event.prizes.third}</span>
+                              </li>
+                            )}
+                          </>
+                        )}
+                        {!event.prizes && event.prize && (
+                          <li className="flex justify-between">
+                            <span className="text-gray-600">Prize Pool:</span>
+                            <span className="font-medium">{event.prize}</span>
+                          </li>
+                        )}
                         <li className="flex justify-between">
                           <span className="text-gray-600">Organizer:</span>
                           <span className="font-medium">{event.organizer}</span>
@@ -281,7 +327,7 @@ export default function EventDetailsPage() {
                         <li className="flex justify-between">
                           <span className="text-gray-600">Registrations:</span>
                           <span className="font-medium">
-                            {event.registrations}/{event.maxRegistrations}
+                            {participationCount}/{event.maxRegistrations || '∞'}
                           </span>
                         </li>
                       </ul>
@@ -291,11 +337,16 @@ export default function EventDetailsPage() {
 
                 <TabsContent value="rules">
                   <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: event.rules }} />
+                  {!event.rules && (
+                    <div className="text-gray-500 italic">
+                      No specific rules have been provided for this event.
+                    </div>
+                  )}
                 </TabsContent>
 
                 <TabsContent value="schedule">
                   <div className="relative border-l-2 border-gray-200 pl-5 ml-6 space-y-8">
-                    {event.timeline.map((item, index) => (
+                    {(event.timeline || []).map((item, index) => (
                       <div key={index} className="relative">
                         <div className="absolute -left-[28px] bg-[#003366] text-white w-10 h-10 rounded-full flex items-center justify-center">
                           {index + 1}
@@ -319,18 +370,18 @@ export default function EventDetailsPage() {
                     <div className="flex justify-between text-sm mb-1">
                       <span>Registration Progress</span>
                       <span>
-                        {event.registrations}/{event.maxRegistrations}
+                        {participationCount}/{event.maxRegistrations || '∞'}
                       </span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
                       <div
                         className="bg-[#003366] h-2 rounded-full"
-                        style={{ width: `${(event.registrations / event.maxRegistrations) * 100}%` }}
+                        style={{ width: `${registrationProgress}%` }}
                       />
                     </div>
                   </div>
 
-                  {event.registrations >= event.maxRegistrations ? (
+                  {event.maxRegistrations && participationCount >= event.maxRegistrations ? (
                     <Alert variant="destructive" className="mb-4">
                       <AlertCircle className="h-4 w-4" />
                       <AlertDescription>
@@ -354,7 +405,10 @@ export default function EventDetailsPage() {
                       <Button
                         className="w-full bg-[#003366] text-white hover:bg-[#002a52]"
                         onClick={handleRegisterClick}
-                        disabled={event.registrations >= event.maxRegistrations || event.status === "completed"}
+                        disabled={
+                          (event.maxRegistrations && participationCount >= event.maxRegistrations) || 
+                          event.status === "completed"
+                        }
                       >
                         Register Now
                       </Button>
@@ -377,15 +431,23 @@ export default function EventDetailsPage() {
                   <h3 className="font-medium mb-3 text-[#003366]">Important Dates</h3>
                   <ul className="space-y-2 text-sm">
                     <li className="flex justify-between">
-                      <span className="text-gray-600">Registration Closes:</span>
+                      <span className="text-gray-600">Registration Deadline:</span>
                       <span className="font-medium">
-                        {event.registrationCloses || formatDate(new Date(new Date(event.date).getTime() - 86400000).toISOString())}
+                        {event.registrationCloses}
                       </span>
                     </li>
                     <li className="flex justify-between">
                       <span className="text-gray-600">Event Date:</span>
-                      <span className="font-medium">{formatDate(event.date)}</span>
+                      <span className="font-medium">{event.date}</span>
                     </li>
+                    {event.created_at && (
+                      <li className="flex justify-between">
+                        <span className="text-gray-600">Posted On:</span>
+                        <span className="font-medium">
+                          {new Date(event.created_at).toLocaleDateString()}
+                        </span>
+                      </li>
+                    )}
                   </ul>
                 </div>
               </div>
