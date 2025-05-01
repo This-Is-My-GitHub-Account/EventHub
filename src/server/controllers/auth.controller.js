@@ -37,6 +37,7 @@ const getProfile = asyncHandler(async (req, res) => {
 
 const updateProfile = asyncHandler(async (req, res) => {
   const updatedUser = await authService.updateProfile(req.user.id, req.body);
+  console.log(req.body);
   res.status(200).json(updatedUser);
 });
 
