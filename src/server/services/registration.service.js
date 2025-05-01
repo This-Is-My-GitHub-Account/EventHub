@@ -55,8 +55,19 @@ const getUserRegistrations = async (userId) => {
   return data;
 };
 
+const getTeamsByEvent = async (eventId) => {
+  const { data: teams, error } = await supabase
+    .from('teams')
+    .select('*')
+    .eq('event_id', eventId);
+
+  if (error) throw error;
+
+  return teams;
+};
 
 module.exports = {
   registerTeamForEvent,
-  getUserRegistrations
+  getUserRegistrations,
+  getTeamsByEvent
 };
