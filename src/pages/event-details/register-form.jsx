@@ -50,7 +50,7 @@ export default function RegisterForm({ event, onSuccess }) {
     if (!isTeamEvent && currentUser) {
       setFormData(prev => ({
         ...prev,
-        teamName: `Individual-${currentUser.id}`
+        teamName:currentUser.name
       }))
     }
   }, [isTeamEvent, currentUser])
@@ -189,7 +189,7 @@ export default function RegisterForm({ event, onSuccess }) {
         team_name: formData.teamName,
         member_ids: memberIds,
       }
-      
+       
      
       const response = await registrationApi.register(registrationData)
       
