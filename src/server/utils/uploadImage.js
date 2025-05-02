@@ -1,48 +1,44 @@
-const supabase = require("../config/email.config");
-
+// uploadImage.js
+const supabase = require("../config/supabase.config");
 
 // Assume file.originalname is something like "image.png"
 const generateUniqueFileName = (originalName) => {
-    const timestamp = Date.now(); // current timestamp in milliseconds
-    const nameParts = originalName.split('.');
-    
-    // Ensure there is an extension
-    if (nameParts.length === 1) {
-      return `${originalName}_${timestamp}`;
-    }
-    
-    const extension = nameParts.pop(); // get the extension ("png")
-    const baseName = nameParts.join('.'); // get the base name ("image")
-    return `${baseName}_${timestamp}.${extension}`;
-  };
+  const timestamp = Date.now(); // current timestamp in milliseconds
+  const nameParts = originalName.split('.');
   
-async function uploadEventImage(file, fileName) {
-    // Define file path inside the bucket, e.g., using the file name directly or with a folder structure.
-    const uniqueFileName = generateUniqueFileName(fileName);
-
-    const filePath = `events/${uniqueFileName}`;
-    
-    // Upload image to the "event-images" bucket.
-    const { data, error } = await supabase
-      .storage
-      .from('event-images')
-      .upload(filePath, file);
-  
-    if (error) {
-      throw error;
-    }
-  
-    // Get the public URL for the uploaded image.
-    const { publicURL, error: urlError } = supabase
-      .storage
-      .from('event-images')
-      .getPublicUrl(filePath);
-  
-    if (urlError) {
-      throw urlError;
-    }
-  
-    return publicURL; // This URL can now be stored in the events table.
+  // Ensure there is an extension
+  if (nameParts.length === 1) {
+    return `${originalName}_${timestamp}`;
   }
+  
+  const extension = nameParts.pop(); // get the extension ("png")
+  const baseName = nameParts.join('.'); // get the base name ("image")
+  return `${baseName}_${timestamp}.${extension}`;
+}
 
-  module.exports = uploadEventImage;
+async function uploadEventImage(file) {
+  // file.buffer is a Buffer, file.originalname a string, 
+  // and file.mimetype the detected mime type
+  const uniqueFileName = generateUniqueFileName(file.originalname);
+  const filePath = `events/${uniqueFileName}`;
+
+  // tell Supabase exactly what type this is:
+  const { data, error: uploadError } = await supabase
+    .storage
+    .from("event-images")
+    .upload(filePath, file.buffer, {
+      contentType: file.mimetype,
+    });
+
+  if (uploadError) throw uploadError;
+
+  const { data: { publicUrl }, error } = await supabase
+  .storage
+  .from('event-images')
+  .getPublicUrl(filePath);
+
+  if (error) throw error;
+  return publicUrl;
+}
+
+module.exports = uploadEventImage;
