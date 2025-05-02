@@ -1,4 +1,5 @@
 const transporter = require('../config/email.config');
+const supabase = require("../config/supabase.config")
 
 const sendRegistrationConfirmation = async (event, userId) => {
   const { data: user } = await supabase
