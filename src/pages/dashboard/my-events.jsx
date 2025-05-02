@@ -9,7 +9,7 @@ import { Link, useNavigate } from "react-router-dom"
 import { eventsApi, registrationApi } from "../../lib/api" // Import the API functions
 import ViewRegisteredTeams from "./view-registered-teams"
 
-export default function MyEvents() {
+export default function MyEvents({ onEventCountsUpdate }) {
   const [activeTab, setActiveTab] = useState("registered")
   const [registeredEvents, setRegisteredEvents] = useState([])
   const [createdEvents, setCreatedEvents] = useState([])
@@ -22,15 +22,22 @@ export default function MyEvents() {
     const fetchEvents = async () => {
       setIsLoading(true)
       setError(null)
-      
+
       try {
         // Fetch registered events
         const registrationsResponse = await registrationApi.getUserRegistrations()
-        setRegisteredEvents(registrationsResponse.data || [])
-        
+        const registered = registrationsResponse.data || []
+        setRegisteredEvents(registered)
+
         // Fetch events created by the user
         const createdEventsResponse = await eventsApi.getUserEvents()
-        setCreatedEvents(createdEventsResponse.data || [])
+        const created = createdEventsResponse.data || []
+        setCreatedEvents(created)
+
+        // Update event counts via the passed prop function
+        if (onEventCountsUpdate) {
+          onEventCountsUpdate(registered, created)
+        }
       } catch (err) {
         console.error("Error fetching events:", err)
         setError("Failed to load your events. Please try again later.")
@@ -38,7 +45,7 @@ export default function MyEvents() {
         setIsLoading(false)
       }
     }
-    
+
     fetchEvents()
   }, [])
 
@@ -105,9 +112,9 @@ export default function MyEvents() {
     return (
       <div className="space-y-4">
         {registeredEvents.map((registration) => {
-          const event = registration.event || registration
+          const event = registration.events;
           return (
-            <div key={registration.id} className="border rounded-lg overflow-hidden">
+            <div key={event.id} className="border rounded-lg overflow-hidden">
               <div className="p-5">
                 <div className="flex flex-col md:flex-row md:items-center justify-between mb-4">
                   <div>
@@ -127,7 +134,7 @@ export default function MyEvents() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
                   <div className="flex items-center">
                     <Calendar className="mr-2 h-4 w-4 text-gray-500" />
-                    <span>{formatDate(event.event_date || event.date)}</span>
+                    <span>{formatDate(event.important_dates.start_date)}</span>
                   </div>
                   <div className="flex items-center">
                     <ClockIcon className="mr-2 h-4 w-4 text-gray-500" />
@@ -212,7 +219,7 @@ export default function MyEvents() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
                 <div className="flex items-center">
                   <Calendar className="mr-2 h-4 w-4 text-gray-500" />
-                  <span>{formatDate(event.event_date || event.date)}</span>
+                  <span>{formatDate(event.important_dates.start_date)}</span>
                 </div>
                 <div className="flex items-center">
                   <ClockIcon className="mr-2 h-4 w-4 text-gray-500" />

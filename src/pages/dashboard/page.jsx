@@ -6,36 +6,49 @@ import ProfileSection from "./profile-section"
 import MyEvents from "./my-events"
 import { Button } from "@/components/ui/button"
 import { Link } from "react-router-dom"
+import { useState, useEffect } from "react"
 
 export default function DashboardPage() {
-  const dashboardData = {
-    eventsRegistered: 2,
-    eventsCreated: 1,
-    upcomingEvents: 1,
+  const [registeredCount, setRegisteredCount] = useState(0)
+  const [createdCount, setCreatedCount] = useState(0)
+  const [upcomingEvents, setUpcomingEvents] = useState([])
+  const [dashboardData, setDashboardData] = useState({
     notifications: [
       {
         id: 1,
-        title: "Registration Confirmed",
-        message: "Your registration for Hackathon 2023 has been confirmed.",
-        date: "2023-07-01",
+        title: "Welcome to EventHub!",
+        message: "Thank you for joining. Explore events and have fun!",
+        date: "2025-05-01",
         read: false,
       },
       {
         id: 2,
-        title: "New Team Member",
-        message: "Jane Smith has joined your team for Hackathon 2023.",
-        date: "2023-07-02",
+        title: "Upcoming Event Reminder",
+        message: "Don't forget to attend the Music Fest tomorrow!",
+        date: "2025-05-02",
+        read: false,
+      },
+      {
+        id: 3,
+        title: "Profile Completion",
+        message: "Complete your profile to unlock achievements.",
+        date: "2025-04-30",
         read: true,
       },
     ],
-    upcomingEventsData: [
-      {
-        id: 1,
-        title: "Hackathon 2023",
-        date: "2023-07-15",
-        daysLeft: 12,
-      },
-    ],
+  })
+
+  const handleEventCounts = (registeredEvents, createdEvents) => {
+    setRegisteredCount(registeredEvents.length)
+    setCreatedCount(createdEvents.length)
+
+    const today = new Date()
+    const upcoming = registeredEvents.filter((registration) => {
+      const event = registration.events
+      const eventDate = new Date(event.important_dates.start_date)
+      return eventDate > today
+    })
+    setUpcomingEvents(upcoming)
   }
 
   return (
@@ -54,9 +67,9 @@ export default function DashboardPage() {
               <div>
                 <p className="text-sm font-medium text-gray-500">Events Registered</p>
                 <div className="flex items-end">
-                  <span className="text-2xl font-bold text-black mr-2">{dashboardData.eventsRegistered}</span>
+                  <span className="text-2xl font-bold text-black mr-2">{registeredCount}</span>
                   <span className="text-xs text-[#2c7873] font-medium bg-[#d5efe6] px-2 py-1 rounded-full">
-                    {dashboardData.upcomingEvents} upcoming
+                    {upcomingEvents.length} upcoming
                   </span>
                 </div>
               </div>
@@ -69,18 +82,16 @@ export default function DashboardPage() {
               <div>
                 <p className="text-sm font-medium text-gray-500">Events Created</p>
                 <div className="flex items-end">
-                  <span className="text-2xl font-bold text-black">{dashboardData.eventsCreated}</span>
+                  <span className="text-2xl font-bold text-black">{createdCount}</span>
                 </div>
               </div>
             </div>
-
-            
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
               <ProfileSection />
-              <MyEvents />
+              <MyEvents onEventCountsUpdate={handleEventCounts} />
             </div>
 
             <div className="space-y-6">
@@ -94,30 +105,46 @@ export default function DashboardPage() {
                 </div>
                 
                 <div className="p-4">
-                  {dashboardData.upcomingEventsData.length > 0 ? (
+                  {upcomingEvents.length > 0 ? (
                     <div className="space-y-3">
-                      {dashboardData.upcomingEventsData.map((event) => (
-                        <div key={event.id} className="flex justify-between items-center py-2 border-b border-[#d5efe6] last:border-0">
-                          <div>
-                            <Link
-                              to={`/event-details/${event.id}`}
-                              className="font-medium text-black hover:text-[#2c7873] transition-colors"
-                            >
-                              {event.title}
-                            </Link>
-                            <p className="text-sm text-gray-500">{new Date(event.date).toLocaleDateString()}</p>
+                      {upcomingEvents.map((registration) => {
+                        const event = registration.events;
+                        // calculate days left (round up)
+                        const startDate = new Date(event.important_dates.start_date);
+                        const today = new Date();
+                        const msPerDay = 1000 * 60 * 60 * 24;
+                        const daysLeft = Math.ceil((startDate - today) / msPerDay);
+                      
+                        return (
+                          <div
+                            key={event.id}
+                            className="flex justify-between items-center py-2 border-b border-[#d5efe6] last:border-0"
+                          >
+                            <div>
+                              <Link
+                                to={`/event-details/${event.id}`}
+                                className="font-medium text-black hover:text-[#2c7873] transition-colors"
+                              >
+                                {event.event_name || event.title}
+                              </Link>
+                              <p className="text-sm text-gray-500 mt-1">
+                                {startDate.toLocaleDateString()}
+                              </p>
+                            </div>
+                            <Badge className="bg-[#d5efe6] text-[#2c7873] border-none">
+                              {daysLeft} days left
+                            </Badge>
                           </div>
-                          <Badge className="bg-[#d5efe6] text-[#2c7873] border-none">
-                            {event.daysLeft} days left
-                          </Badge>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   ) : (
                     <div className="text-center py-6">
                       <p className="text-gray-500">No upcoming events</p>
                       <Link to="/events">
-                        <Button variant="link" className="mt-2 text-[#2c7873]">Browse Events</Button>
+                        <Button variant="link" className="mt-2 text-[#2c7873]">
+                          Browse Events
+                        </Button>
                       </Link>
                     </div>
                   )}
