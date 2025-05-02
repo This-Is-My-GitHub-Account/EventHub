@@ -149,8 +149,7 @@ export default function EventDetailsPage() {
         const currentEventId = String(id)
         
         // Debug logs to help identify the issue
-        console.log("Current event ID:", currentEventId)
-        console.log("User registrations:", registrations)
+        
         
         // Check registration using both property names that might be used
         const isUserRegistered = registrations.some(reg => 
@@ -158,7 +157,7 @@ export default function EventDetailsPage() {
           String(reg.event_id) === currentEventId
         )
         
-        console.log("Is user registered:", isUserRegistered)
+        
         setIsRegistered(isUserRegistered)
       } catch (err) {
         console.error("Error checking registration status:", err)

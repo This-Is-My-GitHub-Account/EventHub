@@ -60,17 +60,37 @@ export default function RegisterForm({ event, onSuccess }) {
     if (query.length > 2) {
       setIsSearching(true)
       try {
-        // API call to search users
-        const response = await authApi.searchUsers(query)
-        
-        // Filter out users that are already added to the team and the current user
-        const filteredResults = response.data.filter(
-          (user) => 
-            !formData.teamMembers.some((member) => member.id === user.id) && 
-            user.id !== currentUser?.id
-        )
-        
-        setSearchResults(filteredResults)
+        // For email searches, use the getUserIdByEmail endpoint
+        if (query.includes('@')) {
+          try {
+            const response = await authApi.getUserIdByEmail(query)
+            if (response.data) {
+              // Make sure the user is not already in the team or the current user
+              if (!formData.teamMembers.some(member => member.id === response.data.id) && 
+                  response.data.id !== currentUser?.id) {
+                setSearchResults([response.data])
+              } else {
+                setSearchResults([])
+                toast.info("This user is already part of your team")
+              }
+            } else {
+              setSearchResults([])
+            }
+          } catch (error) {
+            console.error("Error finding user by email:", error)
+            if (error.response && error.response.status === 404) {
+              toast.error("No user found with this email address")
+            } else {
+              toast.error("Failed to search by email")
+            }
+            setSearchResults([])
+          }
+        } else {
+          // For non-email searches, we'd need a general search endpoint
+          // Since this doesn't seem to be implemented yet, show a message to use email
+          toast.info("Please enter a complete email address to find users")
+          setSearchResults([])
+        }
       } catch (error) {
         console.error("Error searching users:", error)
         toast.error("Failed to search users")
@@ -170,7 +190,7 @@ export default function RegisterForm({ event, onSuccess }) {
         member_ids: memberIds,
       }
       
-      console.log("Submitting registration data:", registrationData)
+     
       const response = await registrationApi.register(registrationData)
       
       // Call the onSuccess callback with the response data
@@ -356,54 +376,62 @@ export default function RegisterForm({ event, onSuccess }) {
               </div>
 
               {/* Team member search - only show if not at max capacity */}
-              {formData.teamMembers.length < maxTeamSize - 1 && (
-                <div className="mt-4">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                    <Input
-                      placeholder="Search for team members by name or email..."
-                      value={searchQuery}
-                      onChange={(e) => handleSearchUser(e.target.value)}
-                      className="pl-9 bg-[#e0f2fe] text-[#003366]"
-                    />
-                  </div>
+              {/* Team member search - only show if not at max capacity */}
+{formData.teamMembers.length < maxTeamSize - 1 && (
+  <div className="mt-4">
+    <div className="relative flex">
+      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+      <Input
+        placeholder="Search for team members by name or email..."
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        className="pl-9 bg-[#e0f2fe] text-[#003366] flex-grow"
+      />
+      <Button 
+        type="button"
+        onClick={() => handleSearchUser(searchQuery)}
+        className="ml-2 bg-blue-600 hover:bg-blue-700 text-white"
+      >
+        Search
+      </Button>
+    </div>
 
-                  {/* Loading indicator */}
-                  {isSearching && (
-                    <div className="flex justify-center p-2 mt-1">
-                      <div className="h-5 w-5 animate-spin rounded-full border-b-2 border-blue-600"></div>
-                    </div>
-                  )}
+    {/* Loading indicator */}
+    {isSearching && (
+      <div className="flex justify-center p-2 mt-1">
+        <div className="h-5 w-5 animate-spin rounded-full border-b-2 border-blue-600"></div>
+      </div>
+    )}
 
-                  {/* Search results */}
-                  {searchResults.length > 0 && !isSearching && (
-                    <div className="mt-1 border rounded-md shadow-sm overflow-hidden bg-white">
-                      <ul className="max-h-40 overflow-y-auto">
-                        {searchResults.map((user) => (
-                          <li
-                            key={user.id}
-                            className="p-2 hover:bg-[#d1d5db] cursor-pointer flex justify-between items-center"
-                            onClick={() => handleAddTeamMember(user)}
-                          >
-                            <div>
-                              <div className="font-medium text-[#003366]">{user.name}</div>
-                              <div className="text-xs text-gray-500">{user.email}</div>
-                            </div>
-                            <Plus className="h-4 w-4 text-blue-500" />
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
+    {/* Search results */}
+    {searchResults.length > 0 && !isSearching && (
+      <div className="mt-1 border rounded-md shadow-sm overflow-hidden bg-white">
+        <ul className="max-h-40 overflow-y-auto">
+          {searchResults.map((user) => (
+            <li
+              key={user.id}
+              className="p-2 hover:bg-[#d1d5db] cursor-pointer flex justify-between items-center"
+              onClick={() => handleAddTeamMember(user)}
+            >
+              <div>
+                <div className="font-medium text-[#003366]">{user.name}</div>
+                <div className="text-xs text-gray-500">{user.email}</div>
+              </div>
+              <Plus className="h-4 w-4 text-blue-500" />
+            </li>
+          ))}
+        </ul>
+      </div>
+    )}
 
-                  {/* No results message */}
-                  {searchQuery.length > 2 && searchResults.length === 0 && !isSearching && (
-                    <div className="mt-1 border rounded-md p-2 text-sm text-gray-500 bg-white">
-                      No users found with that name or email. Users must be registered in the system to join your team.
-                    </div>
-                  )}
-                </div>
-              )}
+    {/* No results message */}
+    {searchQuery.length > 2 && searchResults.length === 0 && !isSearching && (
+      <div className="mt-1 border rounded-md p-2 text-sm text-gray-500 bg-white">
+        No users found with that name or email. Users must be registered in the system to join your team.
+      </div>
+    )}
+  </div>
+)}
             </div>
           </div>
         </>

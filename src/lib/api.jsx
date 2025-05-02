@@ -87,6 +87,7 @@ export const authApi = {
   login: (data) => api.post('/auth/login', data),
   logout: () => api.post('/auth/logout'),
   getCurrentUserByMail: () => api.get('/auth/by-email'),
+  getUserIdByEmail: (email) => api.get('/auth/by-email', { params: { email } }),
   getProfile: () => api.get('/auth/profile'),  
   updateProfile: (data) => api.put('/auth/profile', data),
 };
