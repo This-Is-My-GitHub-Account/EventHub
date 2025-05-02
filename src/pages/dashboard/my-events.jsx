@@ -112,9 +112,9 @@ export default function MyEvents({ onEventCountsUpdate }) {
     return (
       <div className="space-y-4">
         {registeredEvents.map((registration) => {
-          const event = registration.event || registration
+          const event = registration.events;
           return (
-            <div key={registration.id} className="border rounded-lg overflow-hidden">
+            <div key={event.id} className="border rounded-lg overflow-hidden">
               <div className="p-5">
                 <div className="flex flex-col md:flex-row md:items-center justify-between mb-4">
                   <div>
@@ -134,7 +134,7 @@ export default function MyEvents({ onEventCountsUpdate }) {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
                   <div className="flex items-center">
                     <Calendar className="mr-2 h-4 w-4 text-gray-500" />
-                    <span>{formatDate(event.event_date || event.date)}</span>
+                    <span>{formatDate(event.important_dates.start_date)}</span>
                   </div>
                   <div className="flex items-center">
                     <ClockIcon className="mr-2 h-4 w-4 text-gray-500" />
@@ -219,7 +219,7 @@ export default function MyEvents({ onEventCountsUpdate }) {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
                 <div className="flex items-center">
                   <Calendar className="mr-2 h-4 w-4 text-gray-500" />
-                  <span>{formatDate(event.event_date || event.date)}</span>
+                  <span>{formatDate(event.important_dates.start_date)}</span>
                 </div>
                 <div className="flex items-center">
                   <ClockIcon className="mr-2 h-4 w-4 text-gray-500" />

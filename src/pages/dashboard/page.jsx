@@ -43,8 +43,9 @@ export default function DashboardPage() {
     setCreatedCount(createdEvents.length)
 
     const today = new Date()
-    const upcoming = registeredEvents.filter((event) => {
-      const eventDate = new Date(event.event_date || event.date)
+    const upcoming = registeredEvents.filter((registration) => {
+      const event = registration.events
+      const eventDate = new Date(event.important_dates.start_date)
       return eventDate > today
     })
     setUpcomingEvents(upcoming)
@@ -107,14 +108,16 @@ export default function DashboardPage() {
                   {upcomingEvents.length > 0 ? (
                     <div className="space-y-3">
                       <ul>
-                        {upcomingEvents.map((event) => (
+                        {upcomingEvents.map((registration) => {
+                          const event = registration.events;
+                          return (
                           <li key={event.id} className="p-3 rounded-md bg-gray-50">
                             <h4 className="font-medium text-black">{event.event_name || event.title}</h4>
                             <p className="text-sm text-gray-600 mt-1">
-                              {new Date(event.event_date || event.date).toLocaleDateString()}
+                              {new Date(event.important_dates.start_date).toLocaleDateString()}
                             </p>
                           </li>
-                        ))}
+                        )})}
                       </ul>
                     </div>
                   ) : (
