@@ -45,6 +45,7 @@ export default function EventDetailsPage() {
   const [participationCount, setParticipationCount] = useState(0)
   const [showRegisterDialog, setShowRegisterDialog] = useState(false)
 
+  // Separate useEffect for event data fetching
   useEffect(() => {
     const fetchEventData = async () => {
       try {
@@ -125,39 +126,90 @@ export default function EventDetailsPage() {
       }
     }
 
+    fetchEventData()
+  }, [id])
+
+  // Separate useEffect for authentication and registration status
+  useEffect(() => {
     const checkAuth = () => {
       // Check if user is authenticated by looking for user token
       const token = localStorage.getItem('userToken') || sessionStorage.getItem('userToken')
       setIsAuthenticated(!!token)
+      return !!token
+    }
+    
+    const checkRegistration = async () => {
+      try {
+        // Fetch user registrations to check if already registered
+        const registrationsResponse = await registrationApi.getUserRegistrations()
+        const registrations = registrationsResponse.data
+        
+        // Check if user is registered for this event
+        // Compare as strings to ensure type safety
+        const currentEventId = String(id)
+        
+        // Debug logs to help identify the issue
+        console.log("Current event ID:", currentEventId)
+        console.log("User registrations:", registrations)
+        
+        // Check registration using both property names that might be used
+        const isUserRegistered = registrations.some(reg => 
+          String(reg.eventId) === currentEventId || 
+          String(reg.event_id) === currentEventId
+        )
+        
+        console.log("Is user registered:", isUserRegistered)
+        setIsRegistered(isUserRegistered)
+      } catch (err) {
+        console.error("Error checking registration status:", err)
+        setIsRegistered(false)
+      }
     }
 
-    const checkRegistration = async () => {
-      if (isAuthenticated) {
-        try {
-          // Fetch user registrations to check if already registered
-          const registrationsResponse = await registrationApi.getUserRegistrations()
-          const registrations = registrationsResponse.data
-          
-          // Check if user is registered for this event
-          const isUserRegistered = registrations.some(reg => reg.eventId === id)
-          setIsRegistered(isUserRegistered)
-        } catch (err) {
-          console.error("Error checking registration status:", err)
+    // First check auth status
+    const isUserAuth = checkAuth()
+    
+    // Only check registration if user is authenticated
+    if (isUserAuth) {
+      checkRegistration()
+    } else {
+      // Reset registration status if not authenticated
+      setIsRegistered(false)
+    }
+    
+    // Setup event listener for storage changes (login/logout)
+    const handleStorageChange = () => {
+      const wasAuthenticated = isAuthenticated
+      const nowAuthenticated = checkAuth()
+      
+      // If authentication status changed
+      if (wasAuthenticated !== nowAuthenticated) {
+        if (nowAuthenticated) {
+          // User just logged in, check registration
+          checkRegistration()
+        } else {
+          // User logged out, reset registration status
           setIsRegistered(false)
         }
       }
     }
-
-    fetchEventData()
-    checkAuth()
-    // Only check registration if user is authenticated
-    if (isAuthenticated) {
-      checkRegistration()
+    
+    // Add event listener for storage changes
+    window.addEventListener('storage', handleStorageChange)
+    
+    // Custom event for login/logout from within the same tab
+    window.addEventListener('authStatusChange', handleStorageChange)
+    
+    // Cleanup
+    return () => {
+      window.removeEventListener('storage', handleStorageChange)
+      window.removeEventListener('authStatusChange', handleStorageChange)
     }
   }, [id, isAuthenticated])
 
   const handleRegisterClick = () => {
     if (!isAuthenticated) {
+      // Store current page URL to redirect back after login
       navigate("/login", { state: { redirectTo: `/event-details/${id}` } })
     } else {
       setShowRegisterDialog(true)
@@ -186,7 +238,9 @@ export default function EventDetailsPage() {
       </div>
     )
   }
-
+  
+  
+  
   if (error || !event) {
     return (
       <div className="min-h-screen flex flex-col bg-gradient-to-b from-blue-50 via-white to-blue-100">
@@ -406,11 +460,12 @@ export default function EventDetailsPage() {
                         className="w-full bg-[#003366] text-white hover:bg-[#002a52]"
                         onClick={handleRegisterClick}
                         disabled={
+                          isRegistered || 
                           (event.maxRegistrations && participationCount >= event.maxRegistrations) || 
                           event.status === "completed"
                         }
                       >
-                        Register Now
+                        {isAuthenticated ? "Register Now" : "Login to Register"}
                       </Button>
                     )}
 
@@ -461,13 +516,32 @@ export default function EventDetailsPage() {
           <DialogHeader>
             <DialogTitle className="text-[#003366]">Register for {event.title}</DialogTitle>
           </DialogHeader>
-          <RegisterForm
-            event={event}
-            onSuccess={() => {
-              setIsRegistered(true)
-              setShowRegisterDialog(false)
-            }}
-          />
+          {isRegistered ? (
+            <div className="py-4">
+              <Alert className="mb-4 bg-green-50 border-green-200">
+                <AlertDescription className="text-[#003366]">
+                  You are already registered for this event. Check your dashboard for details.
+                </AlertDescription>
+              </Alert>
+              <Button 
+                className="w-full bg-[#003366] text-white hover:bg-[#002a52]" 
+                onClick={() => {
+                  setShowRegisterDialog(false)
+                  navigate("/dashboard")
+                }}
+              >
+                Go to Dashboard
+              </Button>
+            </div>
+          ) : (
+            <RegisterForm
+              event={event}
+              onSuccess={() => {
+                setIsRegistered(true)
+                setShowRegisterDialog(false)
+              }}
+            />
+          )}
         </DialogContent>
       </Dialog>
 

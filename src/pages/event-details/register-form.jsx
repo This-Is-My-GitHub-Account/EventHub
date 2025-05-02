@@ -1,23 +1,19 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { X, User, Search, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { registrationApi, authApi } from "../../lib/api"// Adjust path as needed
-import { Toaster } from "@/components/ui/sonner" // Assuming you have a toast component
+import { registrationApi, authApi } from "../../lib/api"
+import { toast } from "sonner"
 
 export default function RegisterForm({ event, onSuccess }) {
   const [formData, setFormData] = useState({
-    participantName: "",
-    participantEmail: "",
-    participantPhone: "",
-    paymentMethod: "online",
-    teamName: event?.teamEvent ? "" : null,
-    teamMembers: event?.teamEvent ? [{ name: "", email: "" }] : null,
+    teamName: "",
+    teamMembers: [],
   })
 
   const [searchQuery, setSearchQuery] = useState("")
@@ -25,23 +21,63 @@ export default function RegisterForm({ event, onSuccess }) {
   const [isSearching, setIsSearching] = useState(false)
   const [isRegistering, setIsRegistering] = useState(false)
   const [errors, setErrors] = useState({})
+  const [currentUser, setCurrentUser] = useState(null)
 
-  const mockUsers = [
-    { id: 1, name: "Jane Smith", email: "jane.smith@college.edu" },
-    { id: 2, name: "John Doe", email: "john.doe@college.edu" },
-    { id: 3, name: "Alice Johnson", email: "alice.j@college.edu" },
-  ]
+  // Fetch current user on component mount
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      try {
+        const response = await authApi.getProfile()
+        if (response.data) {
+          setCurrentUser(response.data)
+        }
+      } catch (error) {
+        console.error("Error fetching current user:", error)
+        toast.error("Failed to fetch user profile")
+      }
+    }
 
-  const handleSearchUser = (query) => {
+    fetchCurrentUser()
+  }, [])
+
+  // Determine if this is a team event
+  
+  const isTeamEvent = event.teamEvent;
+  
+  
+  // Set default team name for solo events
+  useEffect(() => {
+    if (!isTeamEvent && currentUser) {
+      setFormData(prev => ({
+        ...prev,
+        teamName: `Individual-${currentUser.id}`
+      }))
+    }
+  }, [isTeamEvent, currentUser])
+
+  const handleSearchUser = async (query) => {
     setSearchQuery(query)
     if (query.length > 2) {
-      const results = mockUsers.filter(
-        (user) =>
-          user.name.toLowerCase().includes(query.toLowerCase()) ||
-          user.email.toLowerCase().includes(query.toLowerCase()),
-      )
-      setSearchResults(results)
       setIsSearching(true)
+      try {
+        // API call to search users
+        const response = await authApi.searchUsers(query)
+        
+        // Filter out users that are already added to the team and the current user
+        const filteredResults = response.data.filter(
+          (user) => 
+            !formData.teamMembers.some((member) => member.id === user.id) && 
+            user.id !== currentUser?.id
+        )
+        
+        setSearchResults(filteredResults)
+      } catch (error) {
+        console.error("Error searching users:", error)
+        toast.error("Failed to search users")
+        setSearchResults([])
+      } finally {
+        setIsSearching(false)
+      }
     } else {
       setSearchResults([])
       setIsSearching(false)
@@ -49,34 +85,26 @@ export default function RegisterForm({ event, onSuccess }) {
   }
 
   const handleAddTeamMember = (user) => {
-    const newMember = { name: user.name, email: user.email }
+    // Prevent adding duplicates or the current user
+    if (
+      formData.teamMembers.some((member) => member.id === user.id) ||
+      user.id === currentUser?.id
+    ) {
+      return
+    }
+
+    const newMember = { id: user.id, name: user.name, email: user.email }
     setFormData({
       ...formData,
       teamMembers: [...formData.teamMembers, newMember],
     })
     setSearchQuery("")
-    setIsSearching(false)
+    setSearchResults([])
   }
 
   const handleRemoveTeamMember = (index) => {
     const updatedMembers = [...formData.teamMembers]
     updatedMembers.splice(index, 1)
-    setFormData({
-      ...formData,
-      teamMembers: updatedMembers,
-    })
-  }
-
-  const handleAddEmptyTeamMember = () => {
-    setFormData({
-      ...formData,
-      teamMembers: [...formData.teamMembers, { name: "", email: "" }],
-    })
-  }
-
-  const handleTeamMemberChange = (index, field, value) => {
-    const updatedMembers = [...formData.teamMembers]
-    updatedMembers[index] = { ...updatedMembers[index], [field]: value }
     setFormData({
       ...formData,
       teamMembers: updatedMembers,
@@ -89,29 +117,13 @@ export default function RegisterForm({ event, onSuccess }) {
       ...formData,
       [name]: value,
     })
-  }
 
-  // Function to get user IDs from emails
-  const getUserIdsByEmails = async (emails) => {
-    try {
-      // Collect all member IDs
-      const memberIds = []
-      
-      for (const email of emails) {
-        // Call the getCurrentUserByMail API with the email
-        const response = await authApi.getCurrentUserByMail(email)
-        
-        if (response.data && response.data.id) {
-          memberIds.push(response.data.id)
-        } else {
-          throw new Error(`User with email ${email} not found`)
-        }
-      }
-      
-      return memberIds
-    } catch (error) {
-      console.error("Error fetching user IDs:", error)
-      throw error
+    // Clear specific error when field is changed
+    if (errors[name]) {
+      setErrors({
+        ...errors,
+        [name]: null
+      })
     }
   }
 
@@ -121,73 +133,106 @@ export default function RegisterForm({ event, onSuccess }) {
     setErrors({})
     
     try {
-      // Prepare the emails array from team members
-      const memberEmails = event?.teamEvent 
-        ? formData.teamMembers.map(member => member.email)
-        : []
+      // Validate form data
+      let validationErrors = {}
       
-      // Include the participant's email
-      if (!memberEmails.includes(formData.participantEmail)) {
-        memberEmails.push(formData.participantEmail)
+      if (isTeamEvent && !formData.teamName.trim()) {
+        validationErrors.team_name = "Team name is required"
       }
       
-      // Get user IDs from emails
-      const memberIds = await getUserIdsByEmails(memberEmails)
+      // Team size validation
+      const totalTeamSize = formData.teamMembers.length + 1 // +1 for current user
+      if (isTeamEvent && event.min_team_size && totalTeamSize < event.min_team_size) {
+        validationErrors.member_ids = `Team must have at least ${event.min_team_size} members`
+      }
       
-      // Prepare data according to the schema
+      if (isTeamEvent && event.max_team_size && totalTeamSize > event.max_team_size) {
+        validationErrors.member_ids = `Team cannot have more than ${event.max_team_size} members`
+      }
+      
+      if (Object.keys(validationErrors).length > 0) {
+        setErrors(validationErrors)
+        throw new Error("Please fix the validation errors")
+      }
+      
+      // Get member IDs
+      const memberIds = formData.teamMembers.map(member => member.id)
+      
+      // Add current user's ID if not already included
+      if (currentUser && !memberIds.includes(currentUser.id)) {
+        memberIds.unshift(currentUser.id) // Add current user as first member
+      }
+      
+      // Prepare registration data according to your API structure
       const registrationData = {
         event_id: event.id,
         team_name: formData.teamName,
         member_ids: memberIds,
-        payment_method: formData.paymentMethod,
-        participant_phone: formData.participantPhone
       }
       
-      // Submit the registration
+      console.log("Submitting registration data:", registrationData)
       const response = await registrationApi.register(registrationData)
       
-      console.log("Registration successful:", response.data)
-      
-      // Call the onSuccess callback provided by the parent component
+      // Call the onSuccess callback with the response data
       if (onSuccess) {
         onSuccess(response.data)
       }
       
-      // Show success toast
-      Toaster({
-        title: "Registration Complete",
+      toast.success("Registration Complete", {
         description: "You have successfully registered for this event.",
-        variant: "success",
       })
       
     } catch (error) {
       console.error("Registration error:", error)
       
-      // Set appropriate error message
+      // Handle API errors
       if (error.response && error.response.data) {
-        setErrors(error.response.data.errors || { general: error.response.data.message })
-      } else {
-        setErrors({ general: "An error occurred during registration. Please try again." })
+        setErrors(prevErrors => ({
+          ...prevErrors,
+          ...(error.response.data.errors || { general: error.response.data.message })
+        }))
+      } else if (!Object.keys(errors).length) {
+        // Only set generic error if we don't have specific validation errors
+        setErrors({ 
+          general: error.message || "An error occurred during registration." 
+        })
       }
       
-      // Show error toast
-      Toaster({
-        title: "Registration Failed",
-        description: error.response?.data?.message || "Failed to complete registration. Please try again.",
-        variant: "destructive",
+      toast.error("Registration Failed", {
+        description: errors.general || error.response?.data?.message || error.message || "Failed to complete registration.",
       })
     } finally {
       setIsRegistering(false)
     }
   }
 
+  // Calculate if the team is valid based on event requirements
   const isTeamValid = () => {
-    if (!event.teamEvent) return true
-    if (!formData.teamName) return false
-    if (formData.teamMembers.length < event.teamSize.min) return false
-    if (formData.teamMembers.length > event.teamSize.max) return false
-    return formData.teamMembers.every((member) => member.name && member.email)
+    if (!isTeamEvent) return true
+    
+    // Check team name
+    if (!formData.teamName.trim()) return false
+    
+    // Calculate total team size including the current user
+    const totalTeamSize = formData.teamMembers.length + 1
+    
+    // Check team size constraints
+    const minTeamSize = event?.min_team_size || 1
+    if (minTeamSize && totalTeamSize < minTeamSize) return false
+    if (event?.max_team_size && totalTeamSize > event.max_team_size) return false
+    
+    return true
   }
+
+  // If user is not loaded yet, show loading state
+  if (!currentUser) {
+    return <div className="p-4 text-center">Loading your profile...</div>
+  }
+  
+  // Default to reasonable team size if event object is incomplete
+  const maxTeamSize = event?.max_team_size || 5
+  const minTeamSize = event?.min_team_size || 1
+  
 
   return (
     <form
@@ -200,44 +245,18 @@ export default function RegisterForm({ event, onSuccess }) {
         </div>
       )}
       
-      <div className="space-y-4">
-        {/* Personal Info */}
-        <div className="space-y-2">
-          <h3 className="font-semibold text-lg text-[#003366]">Your Information</h3>
+      {/* User Information Section */}
+      <div className="space-y-2">
+        <h3 className="font-semibold text-lg text-[#003366]">Your Information</h3>
+        <div className="bg-white p-3 rounded-md border border-blue-100">
+          <div className="font-medium text-[#003366]">{currentUser.name}</div>
+          <div className="text-sm text-gray-500">{currentUser.email}</div>
+          {isTeamEvent && <div className="text-xs text-green-600">Team Leader</div>}
+        </div>
 
-          <div className="grid gap-2">
-            <Label htmlFor="participantName">Full Name</Label>
-            <Input
-              id="participantName"
-              name="participantName"
-              value={formData.participantName}
-              onChange={handleInputChange}
-              required
-              className="bg-[#e0f2fe] text-[#003366]"
-            />
-            {errors.participantName && (
-              <p className="text-sm text-red-500">{errors.participantName}</p>
-            )}
-          </div>
-
-          <div className="grid gap-2">
-            <Label htmlFor="participantEmail">Email</Label>
-            <Input
-              id="participantEmail"
-              name="participantEmail"
-              type="email"
-              value={formData.participantEmail}
-              onChange={handleInputChange}
-              required
-              className="bg-[#e0f2fe] text-[#003366]"
-            />
-            {errors.participantEmail && (
-              <p className="text-sm text-red-500">{errors.participantEmail}</p>
-            )}
-          </div>
-
-          <div className="grid gap-2">
-            <Label htmlFor="participantPhone">Phone Number</Label>
+        {!event?.isFree && (
+          <div className="grid gap-2 mt-2">
+            <Label htmlFor="participantPhone">Contact Phone Number</Label>
             <Input
               id="participantPhone"
               name="participantPhone"
@@ -251,81 +270,113 @@ export default function RegisterForm({ event, onSuccess }) {
               <p className="text-sm text-red-500">{errors.participantPhone}</p>
             )}
           </div>
-        </div>
+        )}
+      </div>
+      {/* Team Information Section */}
+      {isTeamEvent && (
+        <>
+          <Separator />
+          <div className="space-y-2">
+            <h3 className="font-semibold text-lg text-[#003366]">Team Information</h3>
+            <p className="text-sm text-gray-600">
+              Maximum team size: {maxTeamSize} members (including you)
+              {minTeamSize > 1 && 
+                `, minimum ${minTeamSize} members`}
+            </p>
 
-        {/* Team Info */}
-        {event?.teamEvent && (
-          <>
-            <Separator />
-            <div className="space-y-2">
-              <h3 className="font-semibold text-lg text-[#003366]">Team Information</h3>
-              <p className="text-sm text-gray-600">
-                Required team size: {event.teamSize.min}-{event.teamSize.max} members
+            <div className="grid gap-2">
+              <Label htmlFor="teamName">Team Name</Label>
+              <Input
+                id="teamName"
+                name="teamName"
+                value={formData.teamName}
+                onChange={handleInputChange}
+                required
+                className="bg-[#e0f2fe] text-[#003366]"
+                placeholder="Enter your team name"
+              />
+              {errors.team_name && (
+                <p className="text-sm text-red-500">{errors.team_name}</p>
+              )}
+            </div>
+
+            <div className="mt-4">
+              <Label className="text-[#003366]">Team Members</Label>
+              <p className="text-sm text-gray-600 mb-2">
+                {formData.teamMembers.length === 0 
+                  ? "You are currently the only team member."
+                  : "You and your team members:"}
               </p>
 
-              <div className="grid gap-2">
-                <Label htmlFor="teamName">Team Name</Label>
-                <Input
-                  id="teamName"
-                  name="teamName"
-                  value={formData.teamName}
-                  onChange={handleInputChange}
-                  required
-                  className="bg-[#e0f2fe] text-[#003366]"
-                />
-                {errors.team_name && (
-                  <p className="text-sm text-red-500">{errors.team_name}</p>
-                )}
+              {/* Current user displayed first */}
+              <div className="flex items-center gap-2 bg-blue-50 p-2 rounded-md border border-blue-200 mb-3">
+                <User className="h-4 w-4 text-blue-500" />
+                <div className="flex-grow">
+                  <div className="font-medium text-[#003366]">{currentUser.name} (You)</div>
+                  <div className="text-xs text-gray-500">{currentUser.email}</div>
+                </div>
               </div>
 
-              <div className="mt-4">
-                <Label className="text-[#003366]">Team Members</Label>
-                <p className="text-sm text-gray-600 mb-2">You are automatically included as a team member</p>
-
+              {formData.teamMembers.length > 0 && (
                 <div className="space-y-3">
                   {formData.teamMembers.map((member, index) => (
-                    <div key={index} className="flex items-center gap-2">
-                      <div className="flex-grow grid grid-cols-2 gap-2">
-                        <Input
-                          placeholder="Name"
-                          value={member.name}
-                          onChange={(e) => handleTeamMemberChange(index, "name", e.target.value)}
-                          required
-                          className="bg-[#e0f2fe] text-[#003366]"
-                        />
-                        <Input
-                          placeholder="Email"
-                          type="email"
-                          value={member.email}
-                          onChange={(e) => handleTeamMemberChange(index, "email", e.target.value)}
-                          required
-                          className="bg-[#e0f2fe] text-[#003366]"
-                        />
+                    <div key={index} className="flex items-center gap-2 bg-white p-2 rounded-md border">
+                      <div className="flex-grow">
+                        <div className="font-medium text-[#003366]">{member.name}</div>
+                        <div className="text-xs text-gray-500">{member.email}</div>
                       </div>
-                      {index > 0 && (
-                        <Button type="button" variant="ghost" size="icon" onClick={() => handleRemoveTeamMember(index)}>
-                          <X className="h-4 w-4 text-gray-500" />
-                        </Button>
-                      )}
+                      <Button 
+                        type="button" 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => handleRemoveTeamMember(index)}
+                      >
+                        <X className="h-4 w-4 text-gray-500" />
+                      </Button>
                     </div>
                   ))}
                 </div>
-                {errors.member_ids && (
-                  <p className="text-sm text-red-500 mt-2">{errors.member_ids}</p>
-                )}
+              )}
+              
+              {errors.member_ids && (
+                <p className="text-sm text-red-500 mt-2">{errors.member_ids}</p>
+              )}
 
+              {/* Display team size info */}
+              <div className="mt-2 text-sm">
+                <span className={
+                  formData.teamMembers.length + 1 > maxTeamSize 
+                    ? "text-red-500" 
+                    : minTeamSize > 1 && formData.teamMembers.length + 1 < minTeamSize
+                    ? "text-amber-500"
+                    : "text-green-600"
+                }>
+                  Current team size: {formData.teamMembers.length + 1} / {maxTeamSize} members
+                </span>
+              </div>
+
+              {/* Team member search - only show if not at max capacity */}
+              {formData.teamMembers.length < maxTeamSize - 1 && (
                 <div className="mt-4">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
                     <Input
-                      placeholder="Search for team members..."
+                      placeholder="Search for team members by name or email..."
                       value={searchQuery}
                       onChange={(e) => handleSearchUser(e.target.value)}
                       className="pl-9 bg-[#e0f2fe] text-[#003366]"
                     />
                   </div>
 
-                  {isSearching && searchResults.length > 0 && (
+                  {/* Loading indicator */}
+                  {isSearching && (
+                    <div className="flex justify-center p-2 mt-1">
+                      <div className="h-5 w-5 animate-spin rounded-full border-b-2 border-blue-600"></div>
+                    </div>
+                  )}
+
+                  {/* Search results */}
+                  {searchResults.length > 0 && !isSearching && (
                     <div className="mt-1 border rounded-md shadow-sm overflow-hidden bg-white">
                       <ul className="max-h-40 overflow-y-auto">
                         {searchResults.map((user) => (
@@ -338,63 +389,65 @@ export default function RegisterForm({ event, onSuccess }) {
                               <div className="font-medium text-[#003366]">{user.name}</div>
                               <div className="text-xs text-gray-500">{user.email}</div>
                             </div>
-                            <Plus className="h-4 w-4 text-gray-500" />
+                            <Plus className="h-4 w-4 text-blue-500" />
                           </li>
                         ))}
                       </ul>
                     </div>
                   )}
 
-                  {isSearching && searchResults.length === 0 && (
-                    <div className="mt-1 border rounded-md p-2 text-sm text-gray-500 bg-white">No users found</div>
+                  {/* No results message */}
+                  {searchQuery.length > 2 && searchResults.length === 0 && !isSearching && (
+                    <div className="mt-1 border rounded-md p-2 text-sm text-gray-500 bg-white">
+                      No users found with that name or email. Users must be registered in the system to join your team.
+                    </div>
                   )}
                 </div>
-
-                {formData.teamMembers.length < event.teamSize.max && (
-                  <Button type="button" variant="outline" className="mt-3 w-full" onClick={handleAddEmptyTeamMember}>
-                    <User className="mr-2 h-4 w-4" />
-                    Add Team Member
-                  </Button>
-                )}
-              </div>
-            </div>
-          </>
-        )}
-
-        {/* Payment */}
-        {!event?.isFree && (
-          <>
-            <Separator />
-            <div className="space-y-2">
-              <h3 className="font-semibold text-lg text-[#003366]">Payment Information</h3>
-              <p className="text-sm text-gray-600">Registration fee: {event.registrationFee}</p>
-
-              <RadioGroup
-                defaultValue="online"
-                name="paymentMethod"
-                value={formData.paymentMethod}
-                onValueChange={(value) => setFormData({ ...formData, paymentMethod: value })}
-                className="mt-3"
-              >
-                <div className="flex items-center space-x-2 mb-2">
-                  <RadioGroupItem value="online" id="online" />
-                  <Label htmlFor="online">Online Payment</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="offline" id="offline" />
-                  <Label htmlFor="offline">Pay at Registration Desk</Label>
-                </div>
-              </RadioGroup>
-              {errors.payment_method && (
-                <p className="text-sm text-red-500">{errors.payment_method}</p>
               )}
             </div>
-          </>
-        )}
-      </div>
+          </div>
+        </>
+      )}
 
+      {/* Payment Section - Only show if event has a registration fee */}
+      {!event?.isFree && event?.registration_fee > 0 && (
+        <>
+          <Separator />
+          <div className="space-y-2">
+            <h3 className="font-semibold text-lg text-[#003366]">Payment Information</h3>
+            <p className="text-sm text-gray-600">Registration fee: ${event.registration_fee}</p>
+
+            <RadioGroup
+              defaultValue="online"
+              name="paymentMethod"
+              value={formData.paymentMethod}
+              onValueChange={(value) => setFormData({ ...formData, paymentMethod: value })}
+              className="mt-3"
+            >
+              <div className="flex items-center space-x-2 mb-2">
+                <RadioGroupItem value="online" id="online" />
+                <Label htmlFor="online">Online Payment</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="offline" id="offline" />
+                <Label htmlFor="offline">Pay at Registration Desk</Label>
+              </div>
+            </RadioGroup>
+          </div>
+        </>
+      )}
+
+      {/* Submit Button */}
       <div className="flex justify-end mt-6">
-        <Button type="submit" disabled={isRegistering || !isTeamValid()}>
+        <Button 
+          type="submit" 
+          disabled={isRegistering || !isTeamValid()} 
+          className={`${
+            isTeamValid() 
+              ? "bg-blue-600 hover:bg-blue-700" 
+              : "bg-gray-400 cursor-not-allowed"
+          } text-white font-medium px-4 py-2 rounded-md`}
+        >
           {isRegistering ? (
             <>
               <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white"></div>
