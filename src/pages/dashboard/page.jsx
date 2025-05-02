@@ -107,24 +107,44 @@ export default function DashboardPage() {
                 <div className="p-4">
                   {upcomingEvents.length > 0 ? (
                     <div className="space-y-3">
-                      <ul>
-                        {upcomingEvents.map((registration) => {
-                          const event = registration.events;
-                          return (
-                          <li key={event.id} className="p-3 rounded-md bg-gray-50">
-                            <h4 className="font-medium text-black">{event.event_name || event.title}</h4>
-                            <p className="text-sm text-gray-600 mt-1">
-                              {new Date(event.important_dates.start_date).toLocaleDateString()}
-                            </p>
-                          </li>
-                        )})}
-                      </ul>
+                      {upcomingEvents.map((registration) => {
+                        const event = registration.events;
+                        // calculate days left (round up)
+                        const startDate = new Date(event.important_dates.start_date);
+                        const today = new Date();
+                        const msPerDay = 1000 * 60 * 60 * 24;
+                        const daysLeft = Math.ceil((startDate - today) / msPerDay);
+                      
+                        return (
+                          <div
+                            key={event.id}
+                            className="flex justify-between items-center py-2 border-b border-[#d5efe6] last:border-0"
+                          >
+                            <div>
+                              <Link
+                                to={`/event-details/${event.id}`}
+                                className="font-medium text-black hover:text-[#2c7873] transition-colors"
+                              >
+                                {event.event_name || event.title}
+                              </Link>
+                              <p className="text-sm text-gray-500 mt-1">
+                                {startDate.toLocaleDateString()}
+                              </p>
+                            </div>
+                            <Badge className="bg-[#d5efe6] text-[#2c7873] border-none">
+                              {daysLeft} days left
+                            </Badge>
+                          </div>
+                        );
+                      })}
                     </div>
                   ) : (
                     <div className="text-center py-6">
                       <p className="text-gray-500">No upcoming events</p>
                       <Link to="/events">
-                        <Button variant="link" className="mt-2 text-[#2c7873]">Browse Events</Button>
+                        <Button variant="link" className="mt-2 text-[#2c7873]">
+                          Browse Events
+                        </Button>
                       </Link>
                     </div>
                   )}
