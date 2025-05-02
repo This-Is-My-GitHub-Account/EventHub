@@ -47,7 +47,7 @@ export default function MyEvents({ onEventCountsUpdate }) {
     }
 
     fetchEvents()
-  }, [onEventCountsUpdate])
+  }, [])
 
   const formatDate = (dateString) => {
     const options = { year: "numeric", month: "long", day: "numeric" }
