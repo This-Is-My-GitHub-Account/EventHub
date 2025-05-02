@@ -12,6 +12,31 @@ export default function DashboardPage() {
   const [registeredCount, setRegisteredCount] = useState(0)
   const [createdCount, setCreatedCount] = useState(0)
   const [upcomingEvents, setUpcomingEvents] = useState([])
+  const [dashboardData, setDashboardData] = useState({
+    notifications: [
+      {
+        id: 1,
+        title: "Welcome to EventHub!",
+        message: "Thank you for joining. Explore events and have fun!",
+        date: "2025-05-01",
+        read: false,
+      },
+      {
+        id: 2,
+        title: "Upcoming Event Reminder",
+        message: "Don't forget to attend the Music Fest tomorrow!",
+        date: "2025-05-02",
+        read: false,
+      },
+      {
+        id: 3,
+        title: "Profile Completion",
+        message: "Complete your profile to unlock achievements.",
+        date: "2025-04-30",
+        read: true,
+      },
+    ],
+  })
 
   const handleEventCounts = (registeredEvents, createdEvents) => {
     setRegisteredCount(registeredEvents.length)
