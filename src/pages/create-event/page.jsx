@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent } from "@/components/ui/card"
 import { CalendarIcon, Upload, MinusCircle, PlusCircle } from "lucide-react"
 import { eventsApi } from "../../lib/api";
+
 export default function CreateEventPage() {
   const navigate = useNavigate()
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -22,31 +23,37 @@ export default function CreateEventPage() {
   const [activeTab, setActiveTab] = useState("details")
   const [eventImage, setEventImage] = useState(null)
   const [formData, setFormData] = useState({
-    title: "",
-    description: "",
+    event_name: "",
+    event_description: "",
     rules: "",
     department: "",
-    location: "",
-    eventDate: "",
-    startTime: "",
-    endTime: "",
-    isTechnical: true,
-    isFree: false,
-    registrationFee: "",
-    teamEvent: false,
-    minTeamSize: "1",
-    maxTeamSize: "1",
-    maxRegistrations: "",
-    prize: "",
+    venue: "",
+    start_date: "",
+    end_date: "",
+    event_time: "",
+    category: "Technical",
+    registration_fee: 0,
+    isFree: true,
+    participation_type: "Solo",
+    min_team_size: 1,
+    max_team_size: 1,
+    max_participants: 100,
+    prizes: {
+      first: "",
+      second: "",
+      third: ""
+    },
     organizer: "",
-    contact: "",
+    contact_info: "",
+    registration_deadline: "",
+    event_type: "In Person",
     timeline: [{ time: "", event: "" }],
   })
 
   // Theme colors
   const themeColors = {
     primary: "#2c7873",
-    primaryLight: "#d5efe6",
+    primaryLight: "#e0f2fe",
     text: "#000000",
     background: "#ffffff",
   }
@@ -64,39 +71,65 @@ export default function CreateEventPage() {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target
+    
+    if (name === "isFree") {
+      setFormData({
+        ...formData,
+        isFree: checked,
+        registration_fee: checked ? 0 : formData.registration_fee
+      })
+      return
+    }
+    
+    if (name === "participation_type") {
+      const isTeam = value === "Team"
+      setFormData({
+        ...formData,
+        participation_type: value,
+        min_team_size: isTeam ? 2 : 1,
+        max_team_size: isTeam ? 4 : 1
+      })
+      return
+    }
+    
+    if (name === "category") {
+      setFormData({
+        ...formData,
+        category: value
+      })
+      return
+    }
+    
+    if (name.startsWith("prize_")) {
+      const prizeKey = name.replace("prize_", "")
+      setFormData({
+        ...formData,
+        prizes: {
+          ...formData.prizes,
+          [prizeKey]: value
+        }
+      })
+      return
+    }
+
     setFormData({
       ...formData,
       [name]: type === "checkbox" ? checked : value,
     })
-
-    // If changing from team to individual event, reset team sizes
-    if (name === "teamEvent" && !checked) {
-      setFormData({
-        ...formData,
-        teamEvent: false,
-        minTeamSize: "1",
-        maxTeamSize: "1",
-      })
-    }
-
-    // If changing from free to paid, clear registration fee
-    if (name === "isFree") {
-      if (checked) {
-        setFormData({
-          ...formData,
-          isFree: true,
-          registrationFee: "",
-        })
-      } else {
-        setFormData({
-          ...formData,
-          isFree: false,
-        })
-      }
-    }
   }
 
   const handleSelectChange = (name, value) => {
+    if (name === "participation_type") {
+      const isTeam = value === "Team"
+      setFormData({
+        ...formData,
+        participation_type: value,
+        min_team_size: isTeam ? 2 : 1,
+        max_team_size: isTeam ? 4 : 1
+      })
+      return
+    }
+    
     setFormData({
       ...formData,
       [name]: value,
@@ -137,90 +170,98 @@ export default function CreateEventPage() {
     }
   }
 
-// First, import your API service at the top of your page.jsx file
- // Update the path if needed
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setError(null);
 
-// Then modify your handleSubmit function in the CreateEventPage component
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  setIsSubmitting(true);
-  setError(null);
+    try {
+      // Validate form data
+      if (formData.participation_type === "Team" && formData.min_team_size > formData.max_team_size) {
+        throw new Error("Minimum team size cannot be greater than maximum team size");
+      }
 
-  try {
-    // Validate form data
-    if (formData.teamEvent && Number.parseInt(formData.minTeamSize) > Number.parseInt(formData.maxTeamSize)) {
-      throw new Error("Minimum team size cannot be greater than maximum team size");
+      if (!formData.isFree && !formData.registration_fee) {
+        throw new Error("Please enter a registration fee for paid events");
+      }
+      
+      if (!formData.registration_deadline) {
+        throw new Error("Registration deadline is required");
+      }
+
+      // Create FormData object for file upload
+      const submitData = new FormData();
+      
+      // Prepare the important dates object
+      const important_dates = {
+        start_date: formData.start_date,
+        end_date: formData.end_date || formData.start_date,
+      };
+      
+      // Structure the event data for backend
+      const eventData = {
+        event_name: formData.event_name,
+        event_description: formData.event_description,
+        rules: formData.rules,
+        department: formData.department,
+        venue: formData.venue,
+        important_dates: important_dates,
+        category: formData.category,
+        registration_fee: formData.isFree ? 0 : Number(formData.registration_fee),
+        participation_type: formData.participation_type,
+        max_team_size: Number(formData.max_team_size),
+        max_participants: Number(formData.max_participants),
+        prizes: formData.prizes,
+        organizer: formData.organizer,
+        contact_info: formData.contact_info,
+        registration_deadline: formData.registration_deadline,
+        event_type: formData.event_type
+      };
+
+      // Append event data
+      if (eventImage) {
+        submitData.append('file', eventImage);
+        // Add event data as a separate field
+        submitData.append('eventData', JSON.stringify(eventData));
+
+        
+        // Call the API to create the event
+        console.log(eventData);
+        console.log(submitData);
+        const response = await eventsApi.create(submitData);
+        console.log("Event created successfully:", response.data);
+      } else {
+        // No image, just send the event data directly
+        const response = await eventsApi.create(eventData);
+        console.log("Event created successfully:", response.data);
+      }
+      // Redirect to dashboard on success
+      navigate("/dashboard");
+    } catch (err) {
+      console.error("Error creating event:", err);
+      setError(err.response?.data?.message || err.message || "An error occurred while creating the event. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
-
-    if (!formData.isFree && !formData.registrationFee) {
-      throw new Error("Please enter a registration fee for paid events");
-    }
-
-    // Create FormData object for file upload
-    const submitData = new FormData();
-    
-    // Map frontend form fields to backend schema fields
-    const eventData = {
-      event_name: formData.title,
-      event_description: formData.description,
-      important_dates: {
-        event_date: formData.eventDate,
-        start_time: formData.startTime,
-        end_time: formData.endTime,
-        timeline: formData.timeline
-      },
-      prizes: { 
-        prize_details: formData.prize 
-      },
-      event_type: "In Person", // Assuming in-person events for now
-      venue: formData.location,
-      contact_info: formData.contact,
-      participation_type: formData.teamEvent ? "Team" : "Solo",
-      max_team_size: formData.teamEvent ? Number(formData.maxTeamSize) : 1,
-      department: formData.department,
-      category: formData.isTechnical ? "Technical" : "Non-Technical",
-      registration_fee: formData.isFree ? 0 : Number(formData.registrationFee)
-    };
-
-    // Append event data as JSON string
-    submitData.append('eventData', JSON.stringify(eventData));
-    
-    // Append image file if exists
-    if (eventImage) {
-      submitData.append('eventImage', eventImage);
-    }
-
-    // Call the API to create the event
-    const response = await eventsApi.create(submitData);
-    console.log("Event created successfully:", response.data);
-
-    // Redirect to dashboard on success
-    navigate("/dashboard");
-  } catch (err) {
-    console.error("Error creating event:", err);
-    setError(err.response?.data?.message || err.message || "An error occurred while creating the event. Please try again.");
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+  };
 
   const isTabValid = (tab) => {
     switch (tab) {
       case "details":
         return (
-          formData.title &&
-          formData.description &&
+          formData.event_name &&
+          formData.event_description &&
           formData.department &&
-          formData.location &&
-          formData.eventDate &&
-          formData.startTime &&
-          formData.endTime
+          formData.venue &&
+          formData.start_date
         )
       case "registration":
         return (
-          (!formData.teamEvent || Number.parseInt(formData.minTeamSize) <= Number.parseInt(formData.maxTeamSize)) &&
-          formData.maxRegistrations &&
-          (formData.isFree || formData.registrationFee)
+          (formData.participation_type !== "Team" || 
+            (Number(formData.min_team_size) <= Number(formData.max_team_size))) &&
+          formData.max_participants &&
+          formData.registration_deadline &&
+          (formData.isFree || formData.registration_fee)
         )
       case "additional":
         // All fields in this tab are optional
@@ -246,8 +287,17 @@ const handleSubmit = async (e) => {
     }
   }
 
+  // Helper function to get today's date in YYYY-MM-DD format
+  const getTodayDate = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   return (
-    <div className="min-h-screen flex flex-col bg-white">
+    <div className="min-h-screen flex flex-col bg-gradient-to-b from-blue-50 via-white to-blue-100">
       <Header />
       <main className="flex-grow py-8">
         <div className="container mx-auto px-4">
@@ -265,7 +315,7 @@ const handleSubmit = async (e) => {
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <div className="mb-8">
-                <TabsList className="grid w-full grid-cols-3 bg-[#d5efe6]">
+                <TabsList className="grid w-full grid-cols-3 bg-[#e0f2fe]">
                   <TabsTrigger 
                     value="details" 
                     className="data-[state=active]:bg-[#2c7873] data-[state=active]:text-white"
@@ -294,25 +344,25 @@ const handleSubmit = async (e) => {
                     <TabsContent value="details">
                       <div className="space-y-4">
                         <div className="space-y-2">
-                          <Label htmlFor="title" className="text-[#2c7873] font-medium">Event Title</Label>
+                          <Label htmlFor="event_name" className="text-[#2c7873] font-medium">Event Title</Label>
                           <Input 
-                            id="title" 
-                            name="title" 
-                            value={formData.title} 
+                            id="event_name" 
+                            name="event_name" 
+                            value={formData.event_name} 
                             onChange={handleChange} 
-                            className="focus-visible:ring-[#2c7873] border-[#d5efe6]" 
+                            className="focus-visible:ring-[#2c7873] border-[#e0f2fe]" 
                             required 
                           />
                         </div>
 
                         <div className="space-y-2">
-                          <Label htmlFor="description" className="text-[#2c7873] font-medium">Event Description</Label>
+                          <Label htmlFor="event_description" className="text-[#2c7873] font-medium">Event Description</Label>
                           <Textarea
-                            id="description"
-                            name="description"
-                            value={formData.description}
+                            id="event_description"
+                            name="event_description"
+                            value={formData.event_description}
                             onChange={handleChange}
-                            className="focus-visible:ring-[#2c7873] border-[#d5efe6]"
+                            className="focus-visible:ring-[#2c7873] border-[#e0f2fe]"
                             rows={5}
                             required
                           />
@@ -324,7 +374,7 @@ const handleSubmit = async (e) => {
                         {/* IMAGE UPLOAD */}
                         <div className="space-y-2">
                           <Label htmlFor="eventImage" className="text-[#2c7873] font-medium">Event Image</Label>
-                          <div className="border rounded-md p-4 border-dashed border-[#2c7873] bg-[#d5efe6] bg-opacity-20">
+                          <div className="border rounded-md p-4 border-dashed border-[#2c7873] bg-[#e0f2fe] bg-opacity-20">
                             <div className="flex items-center justify-center">
                               {eventImage ? (
                                 <div className="relative">
@@ -337,7 +387,7 @@ const handleSubmit = async (e) => {
                                     type="button"
                                     variant="outline"
                                     size="sm"
-                                    className="absolute bottom-2 right-2 bg-white hover:bg-[#d5efe6] text-[#2c7873] border-[#2c7873]"
+                                    className="absolute bottom-2 right-2 bg-white hover:bg-[#e0f2fe] text-[#2c7873] border-[#2c7873]"
                                     onClick={() => setEventImage(null)}
                                   >
                                     Remove
@@ -347,7 +397,7 @@ const handleSubmit = async (e) => {
                                 <div className="text-center">
                                   <Upload className="mx-auto h-12 w-12 text-[#2c7873]" />
                                   <div className="mt-2">
-                                    <Button type="button" variant="outline" asChild className="border-[#2c7873] text-[#2c7873] hover:bg-[#d5efe6]">
+                                    <Button type="button" variant="outline" asChild className="border-[#2c7873] text-[#2c7873] hover:bg-[#e0f2fe]">
                                       <label htmlFor="file-upload" className="cursor-pointer">
                                         Upload image
                                         <input
@@ -379,7 +429,7 @@ const handleSubmit = async (e) => {
                               onValueChange={(value) => handleSelectChange("department", value)}
                               required
                             >
-                              <SelectTrigger className="focus:ring-[#2c7873] border-[#d5efe6]">
+                              <SelectTrigger className="focus:ring-[#2c7873] border-[#e0f2fe]">
                                 <SelectValue placeholder="Select department" />
                               </SelectTrigger>
                               <SelectContent>
@@ -393,13 +443,13 @@ const handleSubmit = async (e) => {
                           </div>
 
                           <div className="space-y-2">
-                            <Label htmlFor="location" className="text-[#2c7873] font-medium">Event Location</Label>
+                            <Label htmlFor="venue" className="text-[#2c7873] font-medium">Event Location</Label>
                             <Input
-                              id="location"
-                              name="location"
-                              value={formData.location}
+                              id="venue"
+                              name="venue"
+                              value={formData.venue}
                               onChange={handleChange}
-                              className="focus-visible:ring-[#2c7873] border-[#d5efe6]"
+                              className="focus-visible:ring-[#2c7873] border-[#e0f2fe]"
                               required
                             />
                           </div>
@@ -408,64 +458,79 @@ const handleSubmit = async (e) => {
                         {/* DATE + TIME */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                           <div className="space-y-2 relative">
-                            <Label htmlFor="eventDate" className="text-[#2c7873] font-medium">Event Date</Label>
+                            <Label htmlFor="start_date" className="text-[#2c7873] font-medium">Start Date</Label>
                             <CalendarIcon className="absolute left-3 top-9 text-[#2c7873]" size={16} />
                             <Input
-                              id="eventDate"
-                              name="eventDate"
+                              id="start_date"
+                              name="start_date"
                               type="date"
-                              value={formData.eventDate}
+                              min={getTodayDate()}
+                              value={formData.start_date}
                               onChange={handleChange}
-                              className="pl-10 focus-visible:ring-[#2c7873] border-[#d5efe6]"
+                              className="pl-10 focus-visible:ring-[#2c7873] border-[#e0f2fe]"
                               required
                             />
                           </div>
 
-                          <div className="space-y-2">
-                            <Label htmlFor="startTime" className="text-[#2c7873] font-medium">Start Time</Label>
+                          <div className="space-y-2 relative">
+                            <Label htmlFor="end_date" className="text-[#2c7873] font-medium">End Date</Label>
+                            <CalendarIcon className="absolute left-3 top-9 text-[#2c7873]" size={16} />
                             <Input
-                              id="startTime"
-                              name="startTime"
-                              type="time"
-                              value={formData.startTime}
+                              id="end_date"
+                              name="end_date"
+                              type="date"
+                              min={formData.start_date || getTodayDate()}
+                              value={formData.end_date}
                               onChange={handleChange}
-                              className="focus-visible:ring-[#2c7873] border-[#d5efe6]"
-                              required
+                              className="pl-10 focus-visible:ring-[#2c7873] border-[#e0f2fe]"
                             />
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label htmlFor="endTime" className="text-[#2c7873] font-medium">End Time</Label>
-                            <Input
-                              id="endTime"
-                              name="endTime"
-                              type="time"
-                              value={formData.endTime}
-                              onChange={handleChange}
-                              className="focus-visible:ring-[#2c7873] border-[#d5efe6]"
-                              required
-                            />
+                            <p className="text-xs text-gray-600">Leave empty if it's a single-day event</p>
                           </div>
                         </div>
 
-                        {/* TECHNICAL CHECKBOX */}
-                        <div className="flex items-center space-x-2 bg-[#d5efe6] bg-opacity-30 p-3 rounded-md border border-[#d5efe6]">
-                          <Checkbox
-                            id="isTechnical"
-                            name="isTechnical"
-                            checked={formData.isTechnical}
-                            onCheckedChange={(checked) =>
-                              setFormData({ ...formData, isTechnical: checked })
-                            }
-                            className="data-[state=checked]:bg-[#2c7873] data-[state=checked]:border-[#2c7873]"
-                          />
-                          <Label htmlFor="isTechnical" className="text-black">This is a technical event</Label>
+                        {/* EVENT TYPE */}
+                        <div className="space-y-2">
+                          <Label htmlFor="event_type" className="text-[#2c7873] font-medium">Event Type</Label>
+                          <Select
+                            value={formData.event_type}
+                            onValueChange={(value) => handleSelectChange("event_type", value)}
+                            required
+                          >
+                            <SelectTrigger className="focus:ring-[#2c7873] border-[#e0f2fe]">
+                              <SelectValue placeholder="Select event type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="In Person">In Person</SelectItem>
+                              <SelectItem value="Online">Virtual</SelectItem>
+                              
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {/* TECHNICAL/NON-TECHNICAL */}
+                        <div className="space-y-2">
+                          <Label htmlFor="category" className="text-[#2c7873] font-medium">Category</Label>
+                          <Select
+                            value={formData.category}
+                            onValueChange={(value) => handleSelectChange("category", value)}
+                            required
+                          >
+                            <SelectTrigger className="focus:ring-[#2c7873] border-[#e0f2fe]">
+                              <SelectValue placeholder="Select category" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Technical">Technical</SelectItem>
+                              <SelectItem value="Non-Technical">Non-Technical</SelectItem>
+                              <SelectItem value="Cultural">Cultural</SelectItem>
+                              <SelectItem value="Sports">Sports</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
 
                         <div className="flex justify-end mt-6">
                           <Button 
                             type="button" 
-                            className="bg-[#2c7873] hover:bg-[#1a5652] text-white" 
+                            className="bg-[#2c7873] hover:bg-[#002a52] text-white" 
                             onClick={nextTab}
                           >
                             Next: Registration Settings
@@ -477,7 +542,7 @@ const handleSubmit = async (e) => {
                     {/* REGISTRATION SETTINGS */}
                     <TabsContent value="registration">
                       <div className="space-y-4">
-                        <div className="flex items-center space-x-2 py-2 bg-[#d5efe6] bg-opacity-30 p-3 rounded-md border border-[#d5efe6]">
+                        <div className="flex items-center space-x-2 py-2 bg-[#e0f2fe] bg-opacity-30 p-3 rounded-md border border-[#e0f2fe]">
                           <Checkbox
                             id="isFree"
                             name="isFree"
@@ -486,7 +551,7 @@ const handleSubmit = async (e) => {
                               setFormData({
                                 ...formData,
                                 isFree: checked,
-                                registrationFee: checked ? "" : formData.registrationFee,
+                                registration_fee: checked ? 0 : formData.registration_fee,
                               })
                             }
                             className="data-[state=checked]:bg-[#2c7873] data-[state=checked]:border-[#2c7873]"
@@ -496,46 +561,46 @@ const handleSubmit = async (e) => {
 
                         {!formData.isFree && (
                           <div className="space-y-2">
-                            <Label htmlFor="registrationFee" className="text-[#2c7873] font-medium">Registration Fee (₹)</Label>
+                            <Label htmlFor="registration_fee" className="text-[#2c7873] font-medium">Registration Fee (₹)</Label>
                             <Input
-                              id="registrationFee"
-                              name="registrationFee"
+                              id="registration_fee"
+                              name="registration_fee"
                               type="number"
-                              value={formData.registrationFee}
+                              value={formData.registration_fee}
                               onChange={handleChange}
-                              className="focus-visible:ring-[#2c7873] border-[#d5efe6]"
-                              required
+                              className="focus-visible:ring-[#2c7873] border-[#e0f2fe]"
+                              required={!formData.isFree}
                             />
                           </div>
                         )}
 
-                        <div className="flex items-center space-x-2 py-2 bg-[#d5efe6] bg-opacity-30 p-3 rounded-md border border-[#d5efe6]">
-                          <Checkbox
-                            id="teamEvent"
-                            name="teamEvent"
-                            checked={formData.teamEvent}
-                            onCheckedChange={(checked) =>
-                              setFormData({
-                                ...formData,
-                                teamEvent: checked,
-                                minTeamSize: checked ? "2" : "1",
-                                maxTeamSize: checked ? "4" : "1",
-                              })
-                            }
-                            className="data-[state=checked]:bg-[#2c7873] data-[state=checked]:border-[#2c7873]"
-                          />
-                          <Label htmlFor="teamEvent" className="text-black">This is a team event</Label>
+                        {/* PARTICIPATION TYPE */}
+                        <div className="space-y-2">
+                          <Label htmlFor="participation_type" className="text-[#2c7873] font-medium">Participation Type</Label>
+                          <Select
+                            value={formData.participation_type}
+                            onValueChange={(value) => handleSelectChange("participation_type", value)}
+                            required
+                          >
+                            <SelectTrigger className="focus:ring-[#2c7873] border-[#e0f2fe]">
+                              <SelectValue placeholder="Select participation type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Solo">Individual</SelectItem>
+                              <SelectItem value="Team">Team</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
 
-                        {formData.teamEvent && (
-                          <div className="grid grid-cols-2 gap-4 bg-[#d5efe6] bg-opacity-20 p-4 rounded-md">
+                        {formData.participation_type === "Team" && (
+                          <div className="grid grid-cols-2 gap-4 bg-[#e0f2fe] bg-opacity-20 p-4 rounded-md">
                             <div className="space-y-2">
-                              <Label htmlFor="minTeamSize" className="text-[#2c7873] font-medium">Minimum Team Size</Label>
+                              <Label htmlFor="min_team_size" className="text-[#2c7873] font-medium">Minimum Team Size</Label>
                               <Select
-                                value={formData.minTeamSize}
-                                onValueChange={(value) => handleSelectChange("minTeamSize", value)}
+                                value={formData.min_team_size.toString()}
+                                onValueChange={(value) => handleSelectChange("min_team_size", Number(value))}
                               >
-                                <SelectTrigger className="focus:ring-[#2c7873] border-[#d5efe6]">
+                                <SelectTrigger className="focus:ring-[#2c7873] border-[#e0f2fe]">
                                   <SelectValue placeholder="Min size" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -547,12 +612,12 @@ const handleSubmit = async (e) => {
                             </div>
 
                             <div className="space-y-2">
-                              <Label htmlFor="maxTeamSize" className="text-[#2c7873] font-medium">Maximum Team Size</Label>
+                              <Label htmlFor="max_team_size" className="text-[#2c7873] font-medium">Maximum Team Size</Label>
                               <Select
-                                value={formData.maxTeamSize}
-                                onValueChange={(value) => handleSelectChange("maxTeamSize", value)}
+                                value={formData.max_team_size.toString()}
+                                onValueChange={(value) => handleSelectChange("max_team_size", Number(value))}
                               >
-                                <SelectTrigger className="focus:ring-[#2c7873] border-[#d5efe6]">
+                                <SelectTrigger className="focus:ring-[#2c7873] border-[#e0f2fe]">
                                   <SelectValue placeholder="Max size" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -566,16 +631,35 @@ const handleSubmit = async (e) => {
                         )}
 
                         <div className="space-y-2">
-                          <Label htmlFor="maxRegistrations" className="text-[#2c7873] font-medium">Maximum Registrations</Label>
+                          <Label htmlFor="max_participants" className="text-[#2c7873] font-medium">Maximum Participants</Label>
                           <Input
-                            id="maxRegistrations"
-                            name="maxRegistrations"
+                            id="max_participants"
+                            name="max_participants"
                             type="number"
-                            value={formData.maxRegistrations}
+                            value={formData.max_participants}
                             onChange={handleChange}
-                            className="focus-visible:ring-[#2c7873] border-[#d5efe6]"
+                            className="focus-visible:ring-[#2c7873] border-[#e0f2fe]"
                             required
                           />
+                        </div>
+
+                        <div className="space-y-2 relative">
+                          <Label htmlFor="registration_deadline" className="text-[#2c7873] font-medium">Registration Deadline</Label>
+                          <CalendarIcon className="absolute left-3 top-9 text-[#2c7873]" size={16} />
+                          <Input
+                            id="registration_deadline"
+                            name="registration_deadline"
+                            type="date"
+                            min={getTodayDate()}
+                            max={formData.start_date || ""}
+                            value={formData.registration_deadline}
+                            onChange={handleChange}
+                            className="pl-10 focus-visible:ring-[#2c7873] border-[#e0f2fe]"
+                            required
+                          />
+                          <p className="text-xs text-gray-600">
+                            Must be before or on the event start date
+                          </p>
                         </div>
 
                         <div className="flex justify-between mt-6">
@@ -583,13 +667,13 @@ const handleSubmit = async (e) => {
                             type="button" 
                             variant="outline" 
                             onClick={prevTab}
-                            className="border-[#2c7873] text-[#2c7873] hover:bg-[#d5efe6]"
+                            className="border-[#2c7873] text-[#2c7873] hover:bg-[#e0f2fe]"
                           >
                             Back
                           </Button>
                           <Button 
                             type="button" 
-                            className="bg-[#2c7873] hover:bg-[#1a5652] text-white" 
+                            className="bg-[#2c7873] hover:bg-[#002a52] text-white" 
                             onClick={nextTab}
                           >
                             Next: Additional Info
@@ -609,109 +693,94 @@ const handleSubmit = async (e) => {
                             value={formData.rules} 
                             onChange={handleChange} 
                             rows={4}
-                            className="focus-visible:ring-[#2c7873] border-[#d5efe6]" 
+                            className="focus-visible:ring-[#2c7873] border-[#e0f2fe]" 
                           />
                           <p className="text-xs text-gray-600">You can include HTML formatting.</p>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* PRIZES SECTION */}
+                        <div className="space-y-4 bg-[#e0f2fe] bg-opacity-20 p-4 rounded-md">
+                          <Label className="text-[#2c7873] font-medium">Prizes</Label>
+                          
                           <div className="space-y-2">
-                            <Label htmlFor="prize" className="text-[#2c7873] font-medium">Prize</Label>
+                            <Label htmlFor="prize_first" className="text-gray-600 text-sm">First Prize (₹)</Label>
                             <Input 
-                              id="prize" 
-                              name="prize" 
-                              value={formData.prize} 
+                              id="prize_first" 
+                              name="prize_first" 
+                              value={formData.prizes.first} 
                               onChange={handleChange}
-                              className="focus-visible:ring-[#2c7873] border-[#d5efe6]" 
+                              placeholder="e.g. 5000"
+                              className="focus-visible:ring-[#2c7873] border-[#e0f2fe]" 
                             />
                           </div>
-
+                          
                           <div className="space-y-2">
-                            <Label htmlFor="organizer" className="text-[#2c7873] font-medium">Organizer/Club</Label>
+                            <Label htmlFor="prize_second" className="text-gray-600 text-sm">Second Prize (₹)</Label>
+                            <Input 
+                              id="prize_second" 
+                              name="prize_second" 
+                              value={formData.prizes.second} 
+                              onChange={handleChange}
+                              placeholder="e.g. 3000"
+                              className="focus-visible:ring-[#2c7873] border-[#e0f2fe]" 
+                            />
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <Label htmlFor="prize_third" className="text-gray-600 text-sm">Third Prize (₹)</Label>
+                            <Input 
+                              id="prize_third" 
+                              name="prize_third" 
+                              value={formData.prizes.third} 
+                              onChange={handleChange}
+                              placeholder="e.g. 2000"
+                              className="focus-visible:ring-[#2c7873] border-[#e0f2fe]" 
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="organizer" className="text-[#2c7873] font-medium">Organizer Name</Label>
                             <Input 
                               id="organizer" 
                               name="organizer" 
                               value={formData.organizer} 
                               onChange={handleChange}
-                              className="focus-visible:ring-[#2c7873] border-[#d5efe6]" 
+                              className="focus-visible:ring-[#2c7873] border-[#e0f2fe]" 
+                            />
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <Label htmlFor="contact_info" className="text-[#2c7873] font-medium">Contact Information</Label>
+                            <Input 
+                              id="contact_info" 
+                              name="contact_info" 
+                              value={formData.contact_info} 
+                              onChange={handleChange}
+                              placeholder="Email or phone number"
+                              className="focus-visible:ring-[#2c7873] border-[#e0f2fe]" 
                             />
                           </div>
                         </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="contact" className="text-[#2c7873] font-medium">Contact Email</Label>
-                          <Input 
-                            id="contact" 
-                            name="contact" 
-                            type="email" 
-                            value={formData.contact} 
-                            onChange={handleChange}
-                            className="focus-visible:ring-[#2c7873] border-[#d5efe6]" 
-                          />
-                        </div>
-
-                        {/* Timeline */}
-                        <div className="space-y-2 bg-[#d5efe6] bg-opacity-20 p-4 rounded-md">
-                          <Label className="text-[#2c7873] font-medium">Event Timeline</Label>
-                          {formData.timeline.map((item, index) => (
-                            <div key={index} className="flex gap-2 mb-2">
-                              <Input
-                                placeholder="Time"
-                                value={item.time}
-                                onChange={(e) => handleTimelineChange(index, "time", e.target.value)}
-                                className="focus-visible:ring-[#2c7873] border-[#d5efe6]"
-                              />
-                              <Input
-                                placeholder="Event description"
-                                value={item.event}
-                                onChange={(e) => handleTimelineChange(index, "event", e.target.value)}
-                                className="focus-visible:ring-[#2c7873] border-[#d5efe6]"
-                              />
-                              <Button 
-                                type="button" 
-                                variant="ghost" 
-                                size="icon" 
-                                onClick={() => removeTimelineItem(index)} 
-                                disabled={formData.timeline.length <= 1}
-                                className="text-[#2c7873] hover:bg-[#d5efe6]"
-                              >
-                                <MinusCircle className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          ))}
-                          <Button 
-                            type="button" 
-                            variant="outline" 
-                            onClick={addTimelineItem}
-                            className="border-[#2c7873] text-[#2c7873] hover:bg-[#d5efe6]"
-                          >
-                            <PlusCircle className="mr-2 h-4 w-4" />
-                            Add Timeline Item
-                          </Button>
-                        </div>
-
+                        
+                        
+                        
                         <div className="flex justify-between mt-6">
                           <Button 
                             type="button" 
                             variant="outline" 
                             onClick={prevTab}
-                            className="border-[#2c7873] text-[#2c7873] hover:bg-[#d5efe6]"
+                            className="border-[#2c7873] text-[#2c7873] hover:bg-[#e0f2fe]"
                           >
                             Back
                           </Button>
                           <Button 
                             type="submit" 
-                            className="bg-[#2c7873] hover:bg-[#1a5652] text-white" 
+                            className="bg-[#2c7873] hover:bg-[#002a52] text-white"
                             disabled={isSubmitting}
                           >
-                            {isSubmitting ? (
-                              <>
-                                <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white"></div>
-                                Creating...
-                              </>
-                            ) : (
-                              "Create Event"
-                            )}
+                            {isSubmitting ? "Creating Event..." : "Create Event"}
                           </Button>
                         </div>
                       </div>

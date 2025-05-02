@@ -1,3 +1,4 @@
+const { rules } = require('eslint-plugin-react-refresh');
 const Joi = require('joi');
 
 const userSchema = Joi.object({
@@ -13,6 +14,9 @@ const userSchema = Joi.object({
 const eventSchema = Joi.object({
   image_url: Joi.string(),
   event_name: Joi.string().required(),
+  rules:Joi.string(),
+  organizer:Joi.string(),
+  max_participants:Joi.number(),
   event_description: Joi.string().required(),
   important_dates: Joi.object(),
   registration_deadline: Joi.date(),
