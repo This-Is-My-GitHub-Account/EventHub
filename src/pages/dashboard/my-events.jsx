@@ -9,7 +9,7 @@ import { Link, useNavigate } from "react-router-dom"
 import { eventsApi, registrationApi } from "../../lib/api" // Import the API functions
 import ViewRegisteredTeams from "./view-registered-teams"
 
-export default function MyEvents() {
+export default function MyEvents({ onEventCountsUpdate }) {
   const [activeTab, setActiveTab] = useState("registered")
   const [registeredEvents, setRegisteredEvents] = useState([])
   const [createdEvents, setCreatedEvents] = useState([])
@@ -22,15 +22,22 @@ export default function MyEvents() {
     const fetchEvents = async () => {
       setIsLoading(true)
       setError(null)
-      
+
       try {
         // Fetch registered events
         const registrationsResponse = await registrationApi.getUserRegistrations()
-        setRegisteredEvents(registrationsResponse.data || [])
-        
+        const registered = registrationsResponse.data || []
+        setRegisteredEvents(registered)
+
         // Fetch events created by the user
         const createdEventsResponse = await eventsApi.getUserEvents()
-        setCreatedEvents(createdEventsResponse.data || [])
+        const created = createdEventsResponse.data || []
+        setCreatedEvents(created)
+
+        // Update event counts via the passed prop function
+        if (onEventCountsUpdate) {
+          onEventCountsUpdate(registered, created)
+        }
       } catch (err) {
         console.error("Error fetching events:", err)
         setError("Failed to load your events. Please try again later.")
@@ -38,9 +45,9 @@ export default function MyEvents() {
         setIsLoading(false)
       }
     }
-    
+
     fetchEvents()
-  }, [])
+  }, [onEventCountsUpdate])
 
   const formatDate = (dateString) => {
     const options = { year: "numeric", month: "long", day: "numeric" }
