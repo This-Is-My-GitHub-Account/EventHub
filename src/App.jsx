@@ -14,6 +14,7 @@ import SignUpPage from "./pages/auth/signup";
 import CreateEventPage from "./pages/create-event/page";
 import RegisterForm from "./pages/event-details/register-form";
 import ViewRegisteredTeams from "./pages/dashboard/view-registered-teams";
+import { Toaster } from "sonner";
 
 // Auth Guard
 const AuthGuard = ({ children }) => {
@@ -69,6 +70,7 @@ function App() {
 
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
+        <Toaster/>
     </AuthProvider>
       </BrowserRouter>
   );
