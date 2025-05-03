@@ -1,9 +1,13 @@
-const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-require('dotenv').config();
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import dotenv from 'dotenv';
+import { errorHandler } from './utils/errorHandler.js';
+import authRoutes from './routes/auth.routes.js';
+import eventRoutes from './routes/event.routes.js';
+import registrationRoutes from './routes/registration.routes.js';
 
-const { errorHandler } = require('./utils/errorHandler');
+dotenv.config();
 
 const app = express();
 
@@ -14,11 +18,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Routes
-
-//create a route for geteventbyuserid
-app.use('/api/auth', require('./routes/auth.routes'));
-app.use('/api/events', require('./routes/event.routes'));
-app.use('/api/registrations', require('./routes/registration.routes'));
+app.use('/api/auth', authRoutes);
+app.use('/api/events', eventRoutes);
+app.use('/api/registrations', registrationRoutes);
 
 // Error Handler
 app.use(errorHandler);
@@ -28,4 +30,4 @@ app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
 
-module.exports = app;
+export default app;

@@ -1,6 +1,6 @@
-const Joi = require('joi');
+import Joi from 'joi';
 
-const userSchema = Joi.object({
+export const userSchema = Joi.object({
   name: Joi.string().required(),
   email: Joi.string().email().required(),
   password: Joi.string().min(6).required(),
@@ -10,7 +10,7 @@ const userSchema = Joi.object({
   passing_out_year: Joi.number().integer()
 });
 
-const eventSchema = Joi.object({
+export const eventSchema = Joi.object({
   image_url: Joi.string(),
   event_name: Joi.string().required(),
   rules:Joi.string(),
@@ -30,15 +30,8 @@ const eventSchema = Joi.object({
   registration_fee: Joi.number().precision(2)
 });
 
-const teamSchema = Joi.object({
+export const teamSchema = Joi.object({
   event_id: Joi.string().uuid().required(),
   team_name: Joi.string().required(),
   member_ids: Joi.array().items(Joi.string().uuid())
 });
-
-
-module.exports = {
-  userSchema,
-  eventSchema,
-  teamSchema
-};

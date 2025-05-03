@@ -1,8 +1,8 @@
-const express = require('express');
-const { validate } = require('../middleware/validation.middleware');
-const { userSchema } = require('../utils/validators');
-const { register, login, getUserIdByEmail, getProfile, updateProfile } = require('../controllers/auth.controller');
-const { protect } = require('../middleware/auth.middleware');
+import express from 'express';
+import { validate } from '../middleware/validation.middleware.js';
+import { userSchema } from '../utils/validators.js';
+import { register, login, getUserIdByEmail, getProfile, updateProfile } from '../controllers/auth.controller.js';
+import { protect } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
 
@@ -89,4 +89,4 @@ router.get('/profile', protect, getProfile);
  */
 router.put('/profile', protect, updateProfile);
 
-module.exports = router;
+export default router;

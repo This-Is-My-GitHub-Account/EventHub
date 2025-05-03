@@ -1,13 +1,19 @@
-const supabase = require('../config/supabase.config');
-const jwt = require('jsonwebtoken');
-require('dotenv').config({path: require('path').resolve(__dirname, '../../../.env') });
+import supabase from '../config/supabase.config.js';
+import jwt from 'jsonwebtoken';
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET);
 };
 
-const register = async (userData) => {
-  
+export const register = async (userData) => {
   const { data: authData, error: authError } = await supabase.auth.signUp({
     email: userData.email,
     password: userData.password,
@@ -16,7 +22,6 @@ const register = async (userData) => {
   if (authError) throw new Error(authError.message);
   const userId = authData.user.id;
 
- 
   const { data: user, error } = await supabase
     .from('users')
     .insert([{
@@ -39,8 +44,7 @@ const register = async (userData) => {
   };
 };
 
-const login = async (email, password) => {
-  
+export const login = async (email, password) => {
   const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
     email,
     password,
@@ -52,7 +56,6 @@ const login = async (email, password) => {
 
   const userId = authData.user.id;
 
- 
   const { data: userProfile, error } = await supabase
     .from('users')
     .select('*')
@@ -69,7 +72,7 @@ const login = async (email, password) => {
   };
 };
 
-const getUserIdByEmail = async (email) => {
+export const getUserIdByEmail = async (email) => {
   const { data, error } = await supabase
     .from('users')
     .select('id, email')
@@ -80,18 +83,18 @@ const getUserIdByEmail = async (email) => {
   return data;
 };
 
-const getProfile = async (userId) => {
+export const getProfile = async (userId) => {
   const { data, error } = await supabase
     .from('users')
     .select('*')
     .eq('id', userId)
     .single();
-    
+
   if (error) throw error;
   return data;
 };
 
-const updateProfile = async (userId, updateData) => {
+export const updateProfile = async (userId, updateData) => {
   console.log("-------------service working--------");
   console.log(updateData);
   const { data, error } = await supabase
@@ -107,17 +110,8 @@ const updateProfile = async (userId, updateData) => {
     .eq('id', userId)
     .select()
     .single();
-    
+
   if (error) throw error;
   console.log(data);
   return data;
-};
-
-
-module.exports = {
-  register,
-  login,
-  getUserIdByEmail,
-  getProfile,
-  updateProfile
 };

@@ -1,10 +1,7 @@
-const supabase = require('../config/supabase.config');
-const emailService = require('./email.service');
+import supabase from '../config/supabase.config.js';
+import { sendRegistrationConfirmation } from './email.service.js';
 
-
-
-const registerTeamForEvent = async ({ event_id, team_name, leader_id, member_ids }) => {
-  // Insert into teams table
+export const registerTeamForEvent = async ({ event_id, team_name, leader_id, member_ids }) => {
   const { data: team, error: teamError } = await supabase
     .from('teams')
     .insert([{ event_id, name: team_name, leader_id }])
@@ -17,8 +14,7 @@ const registerTeamForEvent = async ({ event_id, team_name, leader_id, member_ids
   }
   const team_id = team.id;
 
-  // Insert all members (including leader) into team_members
-  const memberRecords = member_ids.map(member_id => ({ team_id, member_id,event_id }));
+  const memberRecords = member_ids.map(member_id => ({ team_id, member_id, event_id }));
 
   const { error: memberError } = await supabase
     .from('team_members')
@@ -26,7 +22,6 @@ const registerTeamForEvent = async ({ event_id, team_name, leader_id, member_ids
 
   if (memberError) throw memberError;
 
-  // Retrieve event details from the events table so we can include them in the confirmation email
   const { data: eventData, error: eventError } = await supabase
     .from('events')
     .select('*')
@@ -35,16 +30,12 @@ const registerTeamForEvent = async ({ event_id, team_name, leader_id, member_ids
 
   if (eventError) throw eventError;
 
-  // Send registration confirmation email to the team leader
-  await emailService.sendRegistrationConfirmation(eventData, leader_id);
+  await sendRegistrationConfirmation(eventData, leader_id);
 
   return team;
 };
 
-const getUserRegistrations = async (userId) => {
-  // Query team_members table joined with events
-  // (Assumes that Supabase relationships are set up so that the event_id
-  // field in team_members references events.id and the nested alias is “events”)
+export const getUserRegistrations = async (userId) => {
   const { data, error } = await supabase
     .from('team_members')
     .select('event_id, events(*)')
@@ -55,7 +46,7 @@ const getUserRegistrations = async (userId) => {
   return data;
 };
 
-const getTeamsByEvent = async (eventId) => {
+export const getTeamsByEvent = async (eventId) => {
   const { data: teams, error } = await supabase
     .from('teams')
     .select('*')
@@ -64,10 +55,4 @@ const getTeamsByEvent = async (eventId) => {
   if (error) throw error;
 
   return teams;
-};
-
-module.exports = {
-  registerTeamForEvent,
-  getUserRegistrations,
-  getTeamsByEvent
 };

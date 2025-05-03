@@ -1,9 +1,9 @@
-const express = require('express');
-const multer = require('multer');
-const { protect } = require('../middleware/auth.middleware');
-const { validate } = require('../middleware/validation.middleware');
-const { eventSchema } = require('../utils/validators');
-const {
+import express from 'express';
+import multer from 'multer';
+import { protect } from '../middleware/auth.middleware.js';
+import { validate } from '../middleware/validation.middleware.js';
+import { eventSchema } from '../utils/validators.js';
+import {
   createEvent,
   getEvents,
   getEventById,
@@ -11,10 +11,9 @@ const {
   updateEvent,
   deleteEvent,
   getEventParticipationCount
-} = require('../controllers/event.controller');
+} from '../controllers/event.controller.js';
 
 const router = express.Router();
-
 
 // set up multer to store files in memory so we can get a Buffer
 const upload = multer({
@@ -36,6 +35,7 @@ function parseEventData(req, res, next) {
   next();
 }
 router.use(protect);
+
 /**
  * @api {get} /api/events Get all events
  * @apiName GetEvents
@@ -130,4 +130,4 @@ router.route('/:id')
  */
 router.get('/:id/participation-count', getEventParticipationCount);
 
-module.exports = router;
+export default router;
