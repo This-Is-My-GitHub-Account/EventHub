@@ -1,43 +1,157 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import {
   CalendarDays,
   Clock,
   MapPin,
   Users,
   ChevronRight,
+  Loader2
 } from "lucide-react"
 
-// Import the data from dummy.jsx
-import { departments , colors} from "../../dummy"
+// Import API functions
+import { eventsApi } from "../../lib/api"
 
+// Import department icons and colors (keeping these from dummy.jsx)
+import { departments as deptConfigs, colors } from "../../dummy"
 
 export default function DepartmentEvents() {
-  const [activeTab, setActiveTab] = useState("upcoming");
+  const [activeTab, setActiveTab] = useState("upcoming")
+  const [events, setEvents] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const navigate = useNavigate();
+  // Function to determine event status based on dates
+  const determineEventStatus = (event) => {
+    const today = new Date();
+    const startDate = new Date(event.important_dates.start_date);
+    const endDate = new Date(event.important_dates.end_date);
+    
+    if (today < startDate) {
+      return "upcoming";
+    } else if (today >= startDate && today <= endDate) {
+      return "ongoing";
+    } else {
+      return "completed";
+    }
+  }
+  
+  // Function to organize events by department and status
+  const organizeEvents = (eventsData) => {
+    const organized = {}
+    
+    // Initialize structure with department names from config
+    deptConfigs.forEach(dept => {
+      organized[dept.name] = {
+        icon: dept.icon,
+        events: {
+          upcoming: [],
+          ongoing: [],
+          completed: []
+        }
+      }
+    })
+    
+    // Organize events by department and status
+    eventsData.forEach(event => {
+      // Determine the status if it's not already set
+      const status = event.status || determineEventStatus(event);
+      
+      // Get formatted event for display
+      const formattedEvent = {
+        id: event.id,
+        title: event.event_name,
+        type: event.category,
+        date: new Date(event.important_dates.start_date).toLocaleDateString('en-US', {
+          year: 'numeric', 
+          month: 'short', 
+          day: 'numeric'
+        }),
+        time: "All Day", // You might want to adjust this if you have specific time data
+        location: event.venue,
+        registrations: event.max_participants || 0,
+        image: event.image_url,
+        status: status
+      };
+      
+      // Find the appropriate department
+      const departmentName = event.department.charAt(0).toUpperCase() + event.department.slice(1);
+      
+      // Make sure the department exists in our structure
+      if (organized[departmentName]) {
+        // Add event to appropriate status array
+        organized[departmentName].events[status].push(formattedEvent);
+      } else if (organized["All"]) {
+        // If department doesn't match any in our config but we have an "All" category
+        organized["All"].events[status].push(formattedEvent);
+      }
+    })
+    
+    return organized
+  }
 
-  // Function to filter events based on selected status
-  const filterEventsByStatus = (events, status) => {
-    return events.filter(event => event.status === status);
-  };
+  useEffect(() => {
+    // Fetch events when component mounts
+    const fetchEvents = async () => {
+      try {
+        setLoading(true)
+        const response = await eventsApi.getAll()
+        setEvents(organizeEvents(response.data))
+        setLoading(false)
+      } catch (err) {
+        console.error("Error fetching events:", err)
+        setError("Failed to load events. Please try again later.")
+        setLoading(false)
+      }
+    }
+    
+    fetchEvents()
+  }, [])
 
-  // Function to get events based on department and status
-  const getFilteredDepartmentEvents = (department, status) => {
-    return filterEventsByStatus(department.events, status);
-  };
+  // Helper function to handle card click
+  const slugify = (name) => name.toLowerCase().replace(/\s+/g, "-");
+  const handleViewAll = (departmentName,eventstatus) =>() => {
+    const departmentSlug = slugify(departmentName)
+    navigate(`/events?department=${departmentSlug}&status=${eventstatus}&sortBy=date`)
 
-  // Function to handle card click
-  const handleViewDetails = (eventId) => {
-    // This would navigate to event detail page
-    console.log(`Navigating to event details: ${eventId}`);
-    // Navigation is handled by Link component
-  };
+  }
 
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="bg-white py-12 flex items-center justify-center min-h-[400px]">
+        <div className="flex flex-col items-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" style={{ color: colors.primary }} />
+          <p className="text-gray-600">Loading events...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="bg-white py-12">
+        <div className="container mx-auto px-4 text-center">
+          <p className="text-red-500">{error}</p>
+          <Button 
+            onClick={() => window.location.reload()}
+            className="mt-4"
+            style={{ backgroundColor: colors.primary }}
+          >
+            Try Again
+          </Button>
+        </div>
+      </div>
+    )
+  }
+  
   return (
     <div className="bg-white py-12">
       <div className="container mx-auto px-4">
@@ -68,32 +182,35 @@ export default function DepartmentEvents() {
               Completed Events
             </TabsTrigger>
           </TabsList>
-
+          
           {/* Upcoming Events Content */}
           <TabsContent value="upcoming" className="space-y-12">
-            {departments.map((department) => {
-              const filteredEvents = getFilteredDepartmentEvents(department, "upcoming");
+            {Object.entries(events).map(([departmentName, departmentData]) => {
+              const filteredEvents = departmentData.events.upcoming;
               if (filteredEvents.length === 0) return null;
               
               return (
-                <div key={`${department.name}-upcoming`} className="mb-12">
+                <div key={`${departmentName}-upcoming`} className="mb-12">
                   <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center">
                       <div 
                         className="mr-3 p-2 rounded-lg" 
                         style={{ backgroundColor: colors.primaryLight }}
                       >
-                        <department.icon className="h-5 w-5" style={{ color: colors.primary }} />
+                        <departmentData.icon className="h-5 w-5" style={{ color: colors.primary }} />
                       </div>
-                      <h3 className="text-xl font-bold text-black">{department.name} Department Events</h3>
+                      <h3 className="text-xl font-bold text-black">{departmentName} Department Events</h3>
                     </div>
-                    <Button
-                      variant="link"
-                      className="flex items-center text-sm font-medium hover:text-primary transition-colors"
-                      style={{ color: colors.primary }}
-                    >
-                      View all <ChevronRight className="ml-1 h-3 w-3" />
-                    </Button>
+                    
+                      <Button
+                        variant="link"
+                        className="flex items-center text-sm font-medium hover:text-primary transition-colors"
+                        style={{ color: colors.primary }}
+                        onClick={handleViewAll(departmentName,"upcoming")}
+                      >
+                        View all <ChevronRight className="ml-1 h-3 w-3" />
+                      </Button>
+                    
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
@@ -145,12 +262,12 @@ export default function DepartmentEvents() {
                           </div>
                         </CardContent>
                         <CardFooter>
-                          <Link to={`/events/${event.id}`} className="w-full">
+                          <Link to={`/event-details/${event.id}`} className="w-full">
                             <Button
                               variant="outline"
                               className="w-full border-gray-200 hover:bg-gray-50 transition-colors"
                               style={{ color: colors.primary }}
-                              onClick={() => handleViewDetails(event.id)}
+                              
                             >
                               View Details
                             </Button>
@@ -162,33 +279,41 @@ export default function DepartmentEvents() {
                 </div>
               );
             })}
+            {!Object.values(events).some(dept => dept.events.upcoming.length > 0) && (
+              <div className="text-center py-8">
+                <p className="text-gray-500">No upcoming events found.</p>
+              </div>
+            )}
           </TabsContent>
 
           {/* Ongoing Events Content */}
           <TabsContent value="ongoing" className="space-y-12">
-            {departments.map((department) => {
-              const filteredEvents = getFilteredDepartmentEvents(department, "ongoing");
+            {Object.entries(events).map(([departmentName, departmentData]) => {
+              const filteredEvents = departmentData.events.ongoing;
               if (filteredEvents.length === 0) return null;
               
               return (
-                <div key={`${department.name}-ongoing`} className="mb-12">
+                <div key={`${departmentName}-ongoing`} className="mb-12">
                   <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center">
                       <div 
                         className="mr-3 p-2 rounded-lg" 
                         style={{ backgroundColor: colors.primaryLight }}
                       >
-                        <department.icon className="h-5 w-5" style={{ color: colors.primary }} />
+                        <departmentData.icon className="h-5 w-5" style={{ color: colors.primary }} />
                       </div>
-                      <h3 className="text-xl font-bold text-black">{department.name} Department Events</h3>
+                      <h3 className="text-xl font-bold text-black">{departmentName} Department Events</h3>
                     </div>
-                    <Button
-                      variant="link"
-                      className="flex items-center text-sm font-medium hover:text-primary transition-colors"
-                      style={{ color: colors.primary }}
-                    >
-                      View all <ChevronRight className="ml-1 h-3 w-3" />
-                    </Button>
+                    
+                      <Button
+                        variant="link"
+                        className="flex items-center text-sm font-medium hover:text-primary transition-colors"
+                        style={{ color: colors.primary }}
+                        onClick={handleViewAll(departmentName,"ongoing")}
+                      >
+                        View all <ChevronRight className="ml-1 h-3 w-3" />
+                      </Button>
+                    
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
@@ -262,33 +387,41 @@ export default function DepartmentEvents() {
                 </div>
               );
             })}
+            {!Object.values(events).some(dept => dept.events.ongoing.length > 0) && (
+              <div className="text-center py-8">
+                <p className="text-gray-500">No ongoing events at the moment.</p>
+              </div>
+            )}
           </TabsContent>
 
           {/* Completed Events Content */}
           <TabsContent value="completed" className="space-y-12">
-            {departments.map((department) => {
-              const filteredEvents = getFilteredDepartmentEvents(department, "completed");
+            {Object.entries(events).map(([departmentName, departmentData]) => {
+              const filteredEvents = departmentData.events.completed;
               if (filteredEvents.length === 0) return null;
               
               return (
-                <div key={`${department.name}-completed`} className="mb-12">
+                <div key={`${departmentName}-completed`} className="mb-12">
                   <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center">
                       <div 
                         className="mr-3 p-2 rounded-lg" 
                         style={{ backgroundColor: colors.primaryLight }}
                       >
-                        <department.icon className="h-5 w-5" style={{ color: colors.primary }} />
+                        <departmentData.icon className="h-5 w-5" style={{ color: colors.primary }} />
                       </div>
-                      <h3 className="text-xl font-bold text-black">{department.name} Department Events</h3>
+                      <h3 className="text-xl font-bold text-black">{departmentName} Department Events</h3>
                     </div>
-                    <Button
-                      variant="link"
-                      className="flex items-center text-sm font-medium hover:text-primary transition-colors"
-                      style={{ color: colors.primary }}
-                    >
-                      View all <ChevronRight className="ml-1 h-3 w-3" />
-                    </Button>
+                    
+                      <Button
+                        variant="link"
+                        className="flex items-center text-sm font-medium hover:text-primary transition-colors"
+                        style={{ color: colors.primary }}
+                        onClick={handleViewAll(departmentName,"completed")}
+                      >
+                        View all <ChevronRight className="ml-1 h-3 w-3" />
+                      </Button>
+                    
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
@@ -357,6 +490,11 @@ export default function DepartmentEvents() {
                 </div>
               );
             })}
+            {!Object.values(events).some(dept => dept.events.completed.length > 0) && (
+              <div className="text-center py-8">
+                <p className="text-gray-500">No completed events found.</p>
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </div>

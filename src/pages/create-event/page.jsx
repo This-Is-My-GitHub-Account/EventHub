@@ -60,13 +60,13 @@ export default function CreateEventPage() {
 
   // Department options
   const departments = [
-    { value: "computer", label: "Computer Engineering" },
-    { value: "electronics", label: "Electronics & Telecommunication" },
-    { value: "civil", label: "Civil Engineering" },
-    { value: "mechanical", label: "Mechanical Engineering" },
-    { value: "electrical", label: "Electrical Engineering" },
-    { value: "it", label: "Information Technology" },
-    { value: "all", label: "All Departments" },
+    { value: "Computer Engineering", label: "Computer Engineering" },
+    { value: "Electronics & Telecommunication", label: "Electronics & Telecommunication" },
+    { value: "Civil Engineering", label: "Civil Engineering" },
+    { value: "Mechanical Engineering", label: "Mechanical Engineering" },
+    { value: "Electrical Engineering", label: "Electrical Engineering" },
+    { value: "Information Technology", label: "Information Technology" },
+    { value: "All Departments", label: "All Departments" },
   ]
 
   const handleChange = (e) => {
