@@ -1,4 +1,3 @@
-const { rules } = require('eslint-plugin-react-refresh');
 const Joi = require('joi');
 
 const userSchema = Joi.object({
