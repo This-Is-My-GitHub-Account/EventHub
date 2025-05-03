@@ -5,7 +5,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import {
   CalendarDays,
   Clock,
@@ -26,7 +26,7 @@ export default function DepartmentEvents() {
   const [events, setEvents] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-
+  const navigate = useNavigate();
   // Function to determine event status based on dates
   const determineEventStatus = (event) => {
     const today = new Date();
@@ -41,7 +41,7 @@ export default function DepartmentEvents() {
       return "completed";
     }
   }
-
+  
   // Function to organize events by department and status
   const organizeEvents = (eventsData) => {
     const organized = {}
@@ -115,8 +115,10 @@ export default function DepartmentEvents() {
   }, [])
 
   // Helper function to handle card click
-  const handleViewDetails = (eventId) => {
-    link(`/event-details/${eventId}`)
+  const slugify = (name) => name.toLowerCase().replace(/\s+/g, "-");
+  const handleViewAll = (departmentName,eventstatus) =>() => {
+    const departmentSlug = slugify(departmentName)
+    navigate(`/events?department=${departmentSlug}&status=${eventstatus}&sortBy=date`)
 
   }
 
@@ -199,15 +201,16 @@ export default function DepartmentEvents() {
                       </div>
                       <h3 className="text-xl font-bold text-black">{departmentName} Department Events</h3>
                     </div>
-                    <Link to={`/events/department/${departmentName}?status=upcoming`}>
+                    
                       <Button
                         variant="link"
                         className="flex items-center text-sm font-medium hover:text-primary transition-colors"
                         style={{ color: colors.primary }}
+                        onClick={handleViewAll(departmentName,"upcoming")}
                       >
                         View all <ChevronRight className="ml-1 h-3 w-3" />
                       </Button>
-                    </Link>
+                    
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
@@ -301,15 +304,16 @@ export default function DepartmentEvents() {
                       </div>
                       <h3 className="text-xl font-bold text-black">{departmentName} Department Events</h3>
                     </div>
-                    <Link to={`/events`}>
+                    
                       <Button
                         variant="link"
                         className="flex items-center text-sm font-medium hover:text-primary transition-colors"
                         style={{ color: colors.primary }}
+                        onClick={handleViewAll(departmentName,"ongoing")}
                       >
                         View all <ChevronRight className="ml-1 h-3 w-3" />
                       </Button>
-                    </Link>
+                    
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
@@ -408,15 +412,16 @@ export default function DepartmentEvents() {
                       </div>
                       <h3 className="text-xl font-bold text-black">{departmentName} Department Events</h3>
                     </div>
-                    <Link to={`/events/department/${departmentName}?status=completed`}>
+                    
                       <Button
                         variant="link"
                         className="flex items-center text-sm font-medium hover:text-primary transition-colors"
                         style={{ color: colors.primary }}
+                        onClick={handleViewAll(departmentName,"completed")}
                       >
                         View all <ChevronRight className="ml-1 h-3 w-3" />
                       </Button>
-                    </Link>
+                    
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
