@@ -79,6 +79,7 @@ export const registrationApi = {
   register: (data) => api.post('/registrations', data),
   getUserRegistrations: () => api.get('/registrations'),
   getTeamsByEvent: (eventId) => api.get(`/registrations/${eventId}`),
+  checkUserEventRegistration: (userId, eventId) => api.get(`/registrations/check-user/${userId}/${eventId}`),
 };
 
 // Auth API

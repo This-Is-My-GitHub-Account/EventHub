@@ -3,7 +3,8 @@ import { protect } from '../middleware/auth.middleware.js';
 import {
   registerForEvent,
   getUserRegistrations,
-  getTeamsByEvent
+  getTeamsByEvent,
+  checkUserEventRegistration
 } from '../controllers/registration.controller.js';
 import { validate } from '../middleware/validation.middleware.js';
 import { teamSchema } from '../utils/validators.js';
@@ -43,5 +44,16 @@ router.get('/', getUserRegistrations);
  * @apiSuccess {Object[]} teams An array of team objects registered for the event.
  */
 router.get('/:eventId', getTeamsByEvent);
+/**
+ * @api {get} /api/event-registration/check-user/:userId/:eventId Check if a user is already registered for an event
+ * @apiName CheckUserEventRegistration
+ * @apiGroup EventRegistration
+ *
+ * @apiParam {UUID} userId ID of the user to check.
+ * @apiParam {UUID} eventId ID of the event to check.
+ *
+ * @apiSuccess {Object} result Object with isRegistered boolean indicating if user is already registered.
+ */
+router.get('/check-user/:userId/:eventId', checkUserEventRegistration);
 
 export default router;

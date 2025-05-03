@@ -20,3 +20,9 @@ export const getTeamsByEvent = asyncHandler(async (req, res) => {
   const teams = await registrationService.getTeamsByEvent(eventId);
   res.status(200).json(teams);
 });
+
+export const checkUserEventRegistration = asyncHandler(async (req, res) => {
+  const { userId, eventId } = req.params;
+  const isRegistered = await registrationService.checkUserEventRegistration(userId, eventId);
+  res.status(200).json({ isRegistered });
+});
