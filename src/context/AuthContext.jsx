@@ -41,7 +41,6 @@ export const AuthProvider = ({ children }) => {
 
   // Login function
   const login = async (email, password, rememberMe) => {
-    try {
       const response = await authApi.login({ email, password });
       const userData = response.data;
       
@@ -53,9 +52,6 @@ export const AuthProvider = ({ children }) => {
       setCurrentUser(userData);
       navigate('/');
       return userData;
-    } catch (error) {
-      throw error;
-    }
   };
 
   // Logout function
