@@ -65,13 +65,35 @@ export default function RegisterForm({ event, onSuccess }) {
           try {
             const response = await authApi.getUserIdByEmail(query)
             if (response.data) {
+              const foundUser = response.data
+              
               // Make sure the user is not already in the team or the current user
-              if (!formData.teamMembers.some(member => member.id === response.data.id) && 
-                  response.data.id !== currentUser?.id) {
-                setSearchResults([response.data])
-              } else {
+              if (formData.teamMembers.some(member => member.id === foundUser.id) || 
+                  foundUser.id === currentUser?.id) {
                 setSearchResults([])
                 toast.info("This user is already part of your team")
+                setIsSearching(false)
+                return
+              }
+              
+              // Check if the user is already registered for this event in another team
+              try {
+                const registrationCheck = await registrationApi.checkUserEventRegistration(foundUser.id, event.id)
+                
+                if (registrationCheck.data && registrationCheck.data.isRegistered) {
+                  setSearchResults([])
+                  toast.warning("This user is already registered for this event in another team")
+                  setIsSearching(false)
+                  return
+                }
+                
+                // If user passes all checks, add them to search results
+                setSearchResults([foundUser])
+              } catch (regError) {
+                console.error("Error checking user registration:", regError)
+                // If the check fails, we'll still show the user but warn about potential issues
+                setSearchResults([foundUser])
+                toast.warning("Could not verify user's registration status")
               }
             } else {
               setSearchResults([])

@@ -56,3 +56,17 @@ export const getTeamsByEvent = async (eventId) => {
 
   return teams;
 };
+export const checkUserEventRegistration = async (userId, eventId) => {
+  // Check if user is already registered for this event in any team
+  const { data, error } = await supabase
+    .from('team_members')
+    .select('*')
+    .eq('member_id', userId)
+    .eq('event_id', eventId)
+    .limit(1);
+
+  if (error) throw error;
+
+  // Return true if user is already registered (data array has items)
+  return data && data.length > 0;
+};
