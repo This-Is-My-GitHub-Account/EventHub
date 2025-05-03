@@ -1,7 +1,7 @@
-const transporter = require('../config/email.config');
-const supabase = require("../config/supabase.config")
+import transporter from '../config/email.config.js';
+import supabase from "../config/supabase.config.js";
 
-const sendRegistrationConfirmation = async (event, userId) => {
+export const sendRegistrationConfirmation = async (event, userId) => {
   const { data: user } = await supabase
     .from('users')
     .select('email, name')
@@ -27,8 +27,4 @@ const sendRegistrationConfirmation = async (event, userId) => {
   };
 
   await transporter.sendMail(mailOptions);
-};
-
-module.exports = {
-  sendRegistrationConfirmation
 };

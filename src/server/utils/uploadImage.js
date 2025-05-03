@@ -1,7 +1,6 @@
 // uploadImage.js
-const supabase = require("../config/supabase.config");
+import supabase from "../config/supabase.config.js";
 
-// Assume file.originalname is something like "image.png"
 const generateUniqueFileName = (originalName) => {
   const timestamp = Date.now(); // current timestamp in milliseconds
   const nameParts = originalName.split('.');
@@ -14,15 +13,12 @@ const generateUniqueFileName = (originalName) => {
   const extension = nameParts.pop(); // get the extension ("png")
   const baseName = nameParts.join('.'); // get the base name ("image")
   return `${baseName}_${timestamp}.${extension}`;
-}
+};
 
-async function uploadEventImage(file) {
-  // file.buffer is a Buffer, file.originalname a string, 
-  // and file.mimetype the detected mime type
+export default async function uploadEventImage(file) {
   const uniqueFileName = generateUniqueFileName(file.originalname);
   const filePath = `events/${uniqueFileName}`;
 
-  // tell Supabase exactly what type this is:
   const { data, error: uploadError } = await supabase
     .storage
     .from("event-images")
@@ -40,5 +36,3 @@ async function uploadEventImage(file) {
   if (error) throw error;
   return publicUrl;
 }
-
-module.exports = uploadEventImage;

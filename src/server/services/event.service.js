@@ -1,6 +1,6 @@
-const supabase = require('../config/supabase.config');
+import supabase from '../config/supabase.config.js';
 
-const createEvent = async (eventData, userId) => {
+export const createEvent = async (eventData, userId) => {
   const { data, error } = await supabase
     .from('events')
     .insert([{ ...eventData, event_creator_id: userId }])
@@ -11,7 +11,7 @@ const createEvent = async (eventData, userId) => {
   return data;
 };
 
-const getEvents = async (filters = {}) => {
+export const getEvents = async (filters = {}) => {
   let query = supabase.from('events').select('*');
 
   if (filters.type) {
@@ -29,7 +29,7 @@ const getEvents = async (filters = {}) => {
   return data;
 };
 
-const getEventById = async (id) => {
+export const getEventById = async (id) => {
   const { data, error } = await supabase
     .from('events')
     .select('*')
@@ -40,17 +40,17 @@ const getEventById = async (id) => {
   return data;
 };
 
-const getCurrentUserEvents = async (userId) => {
-  
-  const {data, error} = await supabase
+export const getCurrentUserEvents = async (userId) => {
+  const { data, error } = await supabase
     .from('events')
     .select('*')
     .eq('event_creator_id', userId);
 
   if (error) throw error; 
   return data;
-}
-const updateEvent = async (id, eventData, userId) => {
+};
+
+export const updateEvent = async (id, eventData, userId) => {
   const { data, error } = await supabase
     .from('events')
     .update(eventData)
@@ -63,7 +63,7 @@ const updateEvent = async (id, eventData, userId) => {
   return data;
 };
 
-const deleteEvent = async (id, userId) => {
+export const deleteEvent = async (id, userId) => {
   const { error } = await supabase
     .from('events')
     .delete()
@@ -74,24 +74,12 @@ const deleteEvent = async (id, userId) => {
   return { success: true };
 };
 
-const getEventParticipationCount = async (eventId) => {
-  // Use a head request with count option to only retrieve the count
+export const getEventParticipationCount = async (eventId) => {
   const { count, error } = await supabase
     .from('team_members')
     .select('*', { head: true, count: 'exact' })
     .eq('event_id', eventId);
-  
-  if (error) throw error;
-  
-  return count;
-};
 
-module.exports = {
-  createEvent,
-  getEvents,
-  getEventById,
-  getCurrentUserEvents,
-  updateEvent,
-  deleteEvent,
-  getEventParticipationCount
+  if (error) throw error;
+  return count;
 };

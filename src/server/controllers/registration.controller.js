@@ -1,7 +1,7 @@
-const asyncHandler = require('express-async-handler');
-const registrationService = require('../services/registration.service');
+import asyncHandler from 'express-async-handler';
+import * as registrationService from '../services/registration.service.js';
 
-const registerForEvent = asyncHandler(async (req, res) => {
+export const registerForEvent = asyncHandler(async (req, res) => {
   const { event_id, team_name, member_ids } = req.body;
   const leader_id = req.user.id;
 
@@ -9,20 +9,14 @@ const registerForEvent = asyncHandler(async (req, res) => {
   res.status(201).json(team);
 });
 
-const getUserRegistrations = asyncHandler(async (req, res) => {
+export const getUserRegistrations = asyncHandler(async (req, res) => {
   const userId = req.user.id;
   const registrations = await registrationService.getUserRegistrations(userId);
   res.status(200).json(registrations);
 });
 
-const getTeamsByEvent = asyncHandler(async (req, res) => {
+export const getTeamsByEvent = asyncHandler(async (req, res) => {
   const { eventId } = req.params;
   const teams = await registrationService.getTeamsByEvent(eventId);
   res.status(200).json(teams);
 });
-
-module.exports = {
-  registerForEvent,
-  getUserRegistrations,
-  getTeamsByEvent
-};

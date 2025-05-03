@@ -1,6 +1,6 @@
-const asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
 
-const validate = (schema) => asyncHandler(async (req, res, next) => {
+export const validate = (schema) => asyncHandler(async (req, res, next) => {
   try {
     await schema.validateAsync(req.body);
     next();
@@ -9,5 +9,3 @@ const validate = (schema) => asyncHandler(async (req, res, next) => {
     throw new Error(error.details[0].message);
   }
 });
-
-module.exports = { validate };

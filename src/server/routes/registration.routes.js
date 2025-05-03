@@ -1,12 +1,12 @@
-const express = require('express');
-const { protect } = require('../middleware/auth.middleware');
-const {
+import express from 'express';
+import { protect } from '../middleware/auth.middleware.js';
+import {
   registerForEvent,
   getUserRegistrations,
   getTeamsByEvent
-} = require('../controllers/registration.controller');
-const { validate } = require('../middleware/validation.middleware');
-const { teamSchema } = require('../utils/validators');
+} from '../controllers/registration.controller.js';
+import { validate } from '../middleware/validation.middleware.js';
+import { teamSchema } from '../utils/validators.js';
 
 const router = express.Router();
 
@@ -44,4 +44,4 @@ router.get('/', getUserRegistrations);
  */
 router.get('/:eventId', getTeamsByEvent);
 
-module.exports = router;
+export default router;

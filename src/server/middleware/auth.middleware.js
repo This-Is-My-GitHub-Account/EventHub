@@ -1,8 +1,11 @@
-const jwt = require('jsonwebtoken');
-const asyncHandler = require('express-async-handler');
-require("dotenv").config({path: require('path').resolve(__dirname, '../../../.env') })
+import jwt from 'jsonwebtoken';
+import asyncHandler from 'express-async-handler';
+import dotenv from 'dotenv';
+import path from 'path';
 
-const protect = asyncHandler(async (req, res, next) => {
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
+
+export const protect = asyncHandler(async (req, res, next) => {
   let token;
 
   if (req.headers.authorization?.startsWith('Bearer')) {
@@ -23,5 +26,3 @@ const protect = asyncHandler(async (req, res, next) => {
     throw new Error('Not authorized, no token');
   }
 });
-
-module.exports = { protect };
