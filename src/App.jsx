@@ -9,7 +9,7 @@ import HomePage from "./pages/home/page";
 import EventsPage from "./pages/events/page";
 import EventDetailsPage from "./pages/event-details/page";
 import DashboardPage from "./pages/dashboard/page";
-import LoginPage from "./pages/auth/login";
+import LoginPage from "./pages/auth/Login";
 import SignUpPage from "./pages/auth/signup";
 import CreateEventPage from "./pages/create-event/page";
 import RegisterForm from "./pages/event-details/register-form";
