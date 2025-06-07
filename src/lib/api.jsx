@@ -1,8 +1,9 @@
 import axios from 'axios';
 import supabase from './supabase';
 
+const BASE_URL = import.meta.env.BASE_URL || 'http://localhost:3000';
 const api = axios.create({
-  baseURL: 'http://localhost:3000/api',
+  baseURL: `${BASE_URL}/api`,
   headers: {
     'Content-Type': 'application/json',
   },
